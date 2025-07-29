@@ -225,15 +225,6 @@ const Index = () => {
     }
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'websites': return <Globe className="w-4 h-4" />;
-      case 'applications': return <Monitor className="w-4 h-4" />;
-      case 'folders': return <Folder className="w-4 h-4" />;
-      default: return <Globe className="w-4 h-4" />;
-    }
-  };
-
   // Sort items by order for display
   const getSortedItems = (items: Shortcut[]) => {
     return [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -370,33 +361,33 @@ const Index = () => {
                         className="bg-gray-800 border-gray-600 text-white"
                       />
                     </div>
-                     <div>
-                       <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
-                       <div className="flex gap-2">
-                         <Input
-                           id="icon"
-                           value={newShortcut.icon}
-                           onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
-                           placeholder="https://ejemplo.com/favicon.ico"
-                           className="bg-gray-800 border-gray-600 text-white flex-1"
-                         />
-                         <Button
-                           type="button"
-                           onClick={autoDetectIcon}
-                           variant="outline"
-                           size="icon"
-                           className="bg-gray-800 border-gray-600 hover:bg-gray-700"
-                         >
-                           <Wand2 className="w-4 h-4" />
-                         </Button>
-                       </div>
-                       {newShortcut.icon && (
-                         <div className="flex items-center gap-2 mt-2">
-                           <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
-                           <span className="text-sm text-gray-400">Vista previa del icono</span>
-                         </div>
-                       )}
-                     </div>
+                    <div>
+                      <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="icon"
+                          value={newShortcut.icon}
+                          onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
+                          placeholder="https://ejemplo.com/favicon.ico"
+                          className="bg-gray-800 border-gray-600 text-white flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={autoDetectIcon}
+                          variant="outline"
+                          size="icon"
+                          className="bg-gray-800 border-gray-600 hover:bg-gray-700"
+                        >
+                          <Wand2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {newShortcut.icon && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
+                          <span className="text-sm text-gray-400">Vista previa del icono</span>
+                        </div>
+                      )}
+                    </div>
                     <Button onClick={addShortcut} className="w-full">
                       Agregar
                     </Button>
@@ -451,33 +442,33 @@ const Index = () => {
                         className="bg-gray-800 border-gray-600 text-white"
                       />
                     </div>
-                     <div>
-                       <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
-                       <div className="flex gap-2">
-                         <Input
-                           id="icon"
-                           value={newShortcut.icon}
-                           onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
-                           placeholder="https://ejemplo.com/icon.png"
-                           className="bg-gray-800 border-gray-600 text-white flex-1"
-                         />
-                         <Button
-                           type="button"
-                           onClick={autoDetectIcon}
-                           variant="outline"
-                           size="icon"
-                           className="bg-gray-800 border-gray-600 hover:bg-gray-700"
-                         >
-                           <Wand2 className="w-4 h-4" />
-                         </Button>
-                       </div>
-                       {newShortcut.icon && (
-                         <div className="flex items-center gap-2 mt-2">
-                           <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
-                           <span className="text-sm text-gray-400">Vista previa del icono</span>
-                         </div>
-                       )}
-                     </div>
+                    <div>
+                      <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="icon"
+                          value={newShortcut.icon}
+                          onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
+                          placeholder="https://ejemplo.com/icon.png"
+                          className="bg-gray-800 border-gray-600 text-white flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={autoDetectIcon}
+                          variant="outline"
+                          size="icon"
+                          className="bg-gray-800 border-gray-600 hover:bg-gray-700"
+                        >
+                          <Wand2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {newShortcut.icon && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
+                          <span className="text-sm text-gray-400">Vista previa del icono</span>
+                        </div>
+                      )}
+                    </div>
                     <Button onClick={addShortcut} className="w-full">
                       Agregar
                     </Button>
@@ -532,33 +523,33 @@ const Index = () => {
                         className="bg-gray-800 border-gray-600 text-white"
                       />
                     </div>
-                     <div>
-                       <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
-                       <div className="flex gap-2">
-                         <Input
-                           id="icon"
-                           value={newShortcut.icon}
-                           onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
-                           placeholder="https://ejemplo.com/folder-icon.png"
-                           className="bg-gray-800 border-gray-600 text-white flex-1"
-                         />
-                         <Button
-                           type="button"
-                           onClick={autoDetectIcon}
-                           variant="outline"
-                           size="icon"
-                           className="bg-gray-800 border-gray-600 hover:bg-gray-700"
-                         >
-                           <Wand2 className="w-4 h-4" />
-                         </Button>
-                       </div>
-                       {newShortcut.icon && (
-                         <div className="flex items-center gap-2 mt-2">
-                           <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
-                           <span className="text-sm text-gray-400">Vista previa del icono</span>
-                         </div>
-                       )}
-                     </div>
+                    <div>
+                      <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="icon"
+                          value={newShortcut.icon}
+                          onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
+                          placeholder="https://ejemplo.com/folder-icon.png"
+                          className="bg-gray-800 border-gray-600 text-white flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={autoDetectIcon}
+                          variant="outline"
+                          size="icon"
+                          className="bg-gray-800 border-gray-600 hover:bg-gray-700"
+                        >
+                          <Wand2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {newShortcut.icon && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
+                          <span className="text-sm text-gray-400">Vista previa del icono</span>
+                        </div>
+                      )}
+                    </div>
                     <Button onClick={addShortcut} className="w-full">
                       Agregar
                     </Button>

@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Download, Upload, Settings, Globe, Folder, Monitor } from 'lucide-react';
+import { Plus, Download, Upload, Settings, Globe, Folder, Monitor, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import SortableShortcutGrid from '@/components/SortableShortcutGrid';
+import { getAutomaticIcon } from '@/utils/iconUtils';
 
 interface Shortcut {
   id: string;
   name: string;
   url: string;
   icon?: string;
+  order: number;
 }
 
 interface AppData {
@@ -44,8 +46,23 @@ const Index = () => {
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
-        setAppData(parsed);
-        setNewBackground(parsed.backgroundImage || DEFAULT_BACKGROUND);
+        
+        // Migrate data to include order field if not present
+        const migrateShortcuts = (shortcuts: Shortcut[]) => 
+          shortcuts.map((shortcut, index) => ({
+            ...shortcut,
+            order: shortcut.order ?? index
+          }));
+
+        const migratedData = {
+          ...parsed,
+          websites: migrateShortcuts(parsed.websites || []),
+          applications: migrateShortcuts(parsed.applications || []),
+          folders: migrateShortcuts(parsed.folders || [])
+        };
+
+        setAppData(migratedData);
+        setNewBackground(migratedData.backgroundImage || DEFAULT_BACKGROUND);
       } catch (error) {
         console.error('Error parsing saved data:', error);
       }
@@ -67,11 +84,15 @@ const Index = () => {
       return;
     }
 
+    const currentItems = appData[activeTab];
+    const nextOrder = currentItems.length;
+
     const shortcut: Shortcut = {
       id: Date.now().toString(),
       name: newShortcut.name,
       url: newShortcut.url,
-      icon: newShortcut.icon
+      icon: newShortcut.icon,
+      order: nextOrder
     };
 
     setAppData(prev => ({
@@ -86,6 +107,32 @@ const Index = () => {
       title: "Acceso directo agregado",
       description: `${shortcut.name} ha sido agregado a ${activeTab}`
     });
+  };
+
+  const autoDetectIcon = () => {
+    if (!newShortcut.url) {
+      toast({
+        title: "Error",
+        description: "Ingresa una URL primero",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const detectedIcon = getAutomaticIcon(newShortcut.url, activeTab);
+    setNewShortcut(prev => ({ ...prev, icon: detectedIcon }));
+    
+    toast({
+      title: "Icono detectado",
+      description: "El icono ha sido detectado automáticamente"
+    });
+  };
+
+  const handleReorder = (category: 'websites' | 'applications' | 'folders', reorderedItems: Shortcut[]) => {
+    setAppData(prev => ({
+      ...prev,
+      [category]: reorderedItems
+    }));
   };
 
   const removeShortcut = (category: keyof AppData, id: string) => {
@@ -187,37 +234,10 @@ const Index = () => {
     }
   };
 
-  const ShortcutGrid = ({ items, category }: { items: Shortcut[], category: string }) => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-      {items.map((item) => (
-        <Card 
-          key={item.id} 
-          className="group relative bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300 cursor-pointer"
-          onClick={() => openShortcut(item.url, category)}
-        >
-          <CardContent className="p-4 flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center mb-2">
-              {item.icon ? (
-                <img src={item.icon} alt={item.name} className="w-8 h-8 rounded" />
-              ) : (
-                getCategoryIcon(category)
-              )}
-            </div>
-            <span className="text-white text-sm font-medium truncate w-full">{item.name}</span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                removeShortcut(category as keyof AppData, item.id);
-              }}
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
-            >
-              ×
-            </button>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
+  // Sort items by order for display
+  const getSortedItems = (items: Shortcut[]) => {
+    return [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
+  };
 
   return (
     <div 
@@ -350,16 +370,33 @@ const Index = () => {
                         className="bg-gray-800 border-gray-600 text-white"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
-                      <Input
-                        id="icon"
-                        value={newShortcut.icon}
-                        onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
-                        placeholder="https://ejemplo.com/favicon.ico"
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
+                     <div>
+                       <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
+                       <div className="flex gap-2">
+                         <Input
+                           id="icon"
+                           value={newShortcut.icon}
+                           onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
+                           placeholder="https://ejemplo.com/favicon.ico"
+                           className="bg-gray-800 border-gray-600 text-white flex-1"
+                         />
+                         <Button
+                           type="button"
+                           onClick={autoDetectIcon}
+                           variant="outline"
+                           size="icon"
+                           className="bg-gray-800 border-gray-600 hover:bg-gray-700"
+                         >
+                           <Wand2 className="w-4 h-4" />
+                         </Button>
+                       </div>
+                       {newShortcut.icon && (
+                         <div className="flex items-center gap-2 mt-2">
+                           <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
+                           <span className="text-sm text-gray-400">Vista previa del icono</span>
+                         </div>
+                       )}
+                     </div>
                     <Button onClick={addShortcut} className="w-full">
                       Agregar
                     </Button>
@@ -367,7 +404,13 @@ const Index = () => {
                 </DialogContent>
               </Dialog>
             </div>
-            <ShortcutGrid items={appData.websites} category="websites" />
+            <SortableShortcutGrid 
+              items={getSortedItems(appData.websites)} 
+              category="websites"
+              onReorder={(items) => handleReorder('websites', items)}
+              onOpen={openShortcut}
+              onRemove={removeShortcut}
+            />
           </TabsContent>
 
           <TabsContent value="applications" className="mt-6">
@@ -408,16 +451,33 @@ const Index = () => {
                         className="bg-gray-800 border-gray-600 text-white"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
-                      <Input
-                        id="icon"
-                        value={newShortcut.icon}
-                        onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
-                        placeholder="https://ejemplo.com/icon.png"
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
+                     <div>
+                       <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
+                       <div className="flex gap-2">
+                         <Input
+                           id="icon"
+                           value={newShortcut.icon}
+                           onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
+                           placeholder="https://ejemplo.com/icon.png"
+                           className="bg-gray-800 border-gray-600 text-white flex-1"
+                         />
+                         <Button
+                           type="button"
+                           onClick={autoDetectIcon}
+                           variant="outline"
+                           size="icon"
+                           className="bg-gray-800 border-gray-600 hover:bg-gray-700"
+                         >
+                           <Wand2 className="w-4 h-4" />
+                         </Button>
+                       </div>
+                       {newShortcut.icon && (
+                         <div className="flex items-center gap-2 mt-2">
+                           <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
+                           <span className="text-sm text-gray-400">Vista previa del icono</span>
+                         </div>
+                       )}
+                     </div>
                     <Button onClick={addShortcut} className="w-full">
                       Agregar
                     </Button>
@@ -425,7 +485,13 @@ const Index = () => {
                 </DialogContent>
               </Dialog>
             </div>
-            <ShortcutGrid items={appData.applications} category="applications" />
+            <SortableShortcutGrid 
+              items={getSortedItems(appData.applications)} 
+              category="applications"
+              onReorder={(items) => handleReorder('applications', items)}
+              onOpen={openShortcut}
+              onRemove={removeShortcut}
+            />
           </TabsContent>
 
           <TabsContent value="folders" className="mt-6">
@@ -466,16 +532,33 @@ const Index = () => {
                         className="bg-gray-800 border-gray-600 text-white"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
-                      <Input
-                        id="icon"
-                        value={newShortcut.icon}
-                        onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
-                        placeholder="https://ejemplo.com/folder-icon.png"
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
+                     <div>
+                       <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
+                       <div className="flex gap-2">
+                         <Input
+                           id="icon"
+                           value={newShortcut.icon}
+                           onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
+                           placeholder="https://ejemplo.com/folder-icon.png"
+                           className="bg-gray-800 border-gray-600 text-white flex-1"
+                         />
+                         <Button
+                           type="button"
+                           onClick={autoDetectIcon}
+                           variant="outline"
+                           size="icon"
+                           className="bg-gray-800 border-gray-600 hover:bg-gray-700"
+                         >
+                           <Wand2 className="w-4 h-4" />
+                         </Button>
+                       </div>
+                       {newShortcut.icon && (
+                         <div className="flex items-center gap-2 mt-2">
+                           <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
+                           <span className="text-sm text-gray-400">Vista previa del icono</span>
+                         </div>
+                       )}
+                     </div>
                     <Button onClick={addShortcut} className="w-full">
                       Agregar
                     </Button>
@@ -483,7 +566,13 @@ const Index = () => {
                 </DialogContent>
               </Dialog>
             </div>
-            <ShortcutGrid items={appData.folders} category="folders" />
+            <SortableShortcutGrid 
+              items={getSortedItems(appData.folders)} 
+              category="folders"
+              onReorder={(items) => handleReorder('folders', items)}
+              onOpen={openShortcut}
+              onRemove={removeShortcut}
+            />
           </TabsContent>
         </Tabs>
       </div>

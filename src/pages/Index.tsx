@@ -279,7 +279,7 @@ const Index = () => {
       <div className="relative z-10 p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-white"> Dashboard</h1>
+          <h1 className="text-4xl font-bold text-white"> Baronti Dashboard</h1>
           
           <div className="flex gap-4">
             <Button 

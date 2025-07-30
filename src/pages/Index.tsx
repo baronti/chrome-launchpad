@@ -136,12 +136,18 @@ const Index = () => {
   };
 
   const removeShortcut = (category: keyof AppData, id: string) => {
+    console.log('removeShortcut llamado con:', { category, id });
     if (category === 'backgroundImage') return;
     
-    setAppData(prev => ({
-      ...prev,
-      [category]: prev[category].filter(item => item.id !== id)
-    }));
+    setAppData(prev => {
+      console.log('Estado anterior:', prev[category]);
+      const newData = {
+        ...prev,
+        [category]: prev[category].filter(item => item.id !== id)
+      };
+      console.log('Estado nuevo:', newData[category]);
+      return newData;
+    });
     
     toast({
       title: "Acceso directo eliminado",

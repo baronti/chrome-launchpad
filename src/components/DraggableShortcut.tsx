@@ -84,7 +84,8 @@ const DraggableShortcut: React.FC<DraggableShortcutProps> = ({
             console.log('Eliminando shortcut:', { category, id: item.id, name: item.name });
             onRemove(category, item.id);
           }}
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+          className="absolute top-1 right-1 opacity-100 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold z-50 shadow-lg"
+          title="Eliminar acceso directo"
         >
           ×
         </button>

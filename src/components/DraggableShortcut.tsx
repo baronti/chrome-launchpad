@@ -54,13 +54,14 @@ const DraggableShortcut: React.FC<DraggableShortcutProps> = ({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="group relative bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300 select-none"
+      className="group relative bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300 select-none cursor-pointer"
+      onClick={() => onOpen(item.url, category)}
     >
       <CardContent className="p-4 flex flex-col items-center text-center">
         <div 
           {...listeners}
           className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center mb-2 cursor-grab active:cursor-grabbing"
-          onClick={() => onOpen(item.url, category)}
+          onClick={(e) => e.stopPropagation()}
         >
           {item.icon ? (
             <img 

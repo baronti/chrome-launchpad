@@ -168,6 +168,37 @@ const Index = () => {
     });
   };
 
+  const handleBackgroundFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un archivo de imagen válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setNewBackground(dataUrl);
+      setAppData(prev => ({
+        ...prev,
+        backgroundImage: dataUrl
+      }));
+      
+      toast({
+        title: "Fondo actualizado",
+        description: "El archivo local ha sido cargado como fondo"
+      });
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
   const exportData = () => {
     const dataStr = JSON.stringify(appData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -303,6 +334,27 @@ const Index = () => {
                       className="bg-gray-800 border-gray-600 text-white"
                     />
                   </div>
+                  
+                  <div className="text-center text-gray-400">
+                    <span>- o -</span>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-white">Seleccionar archivo local</Label>
+                    <label className="cursor-pointer block">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBackgroundFile}
+                        className="hidden"
+                      />
+                      <div className="bg-gray-800 border border-gray-600 rounded-md p-3 text-center text-white hover:bg-gray-700 transition-colors">
+                        <Upload className="w-5 h-5 mx-auto mb-2" />
+                        <span>Hacer clic para seleccionar imagen</span>
+                      </div>
+                    </label>
+                  </div>
+                  
                   <Button onClick={updateBackground} className="w-full">
                     Actualizar Fondo
                   </Button>

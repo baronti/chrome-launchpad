@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, X, Edit2, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -154,9 +155,11 @@ const TabManager: React.FC<TabManagerProps> = ({
 }) => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [newTabName, setNewTabName] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [editingTab, setEditingTab] = useState<TabData | null>(null);
+  const [tabToDelete, setTabToDelete] = useState<TabData | null>(null);
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -225,7 +228,7 @@ const TabManager: React.FC<TabManagerProps> = ({
     });
   };
 
-  const handleDeleteTab = (tabId: string) => {
+  const startDelete = (tab: TabData) => {
     if (tabs.length <= 1) {
       toast({
         title: "Error",
@@ -234,12 +237,21 @@ const TabManager: React.FC<TabManagerProps> = ({
       });
       return;
     }
+    
+    setTabToDelete(tab);
+    setIsDeleteOpen(true);
+  };
 
-    onTabDelete(tabId);
-    toast({
-      title: "Pestaña eliminada",
-      description: "La pestaña ha sido eliminada"
-    });
+  const confirmDeleteTab = () => {
+    if (tabToDelete) {
+      onTabDelete(tabToDelete.id);
+      toast({
+        title: "Pestaña eliminada",
+        description: `La pestaña "${tabToDelete.name}" ha sido eliminada`
+      });
+    }
+    setTabToDelete(null);
+    setIsDeleteOpen(false);
   };
 
   const startEdit = (tab: TabData) => {
@@ -265,7 +277,7 @@ const TabManager: React.FC<TabManagerProps> = ({
                 isActive={activeTabId === tab.id}
                 onSelect={() => onTabSelect(tab.id)}
                 onEdit={() => startEdit(tab)}
-                onDelete={() => handleDeleteTab(tab.id)}
+                onDelete={() => startDelete(tab)}
               />
             ))}
             
@@ -363,6 +375,34 @@ const TabManager: React.FC<TabManagerProps> = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent className="bg-gray-900 border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              ¿Eliminar pestaña?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300">
+              ¿Estás seguro de que quieres eliminar la pestaña "{tabToDelete?.name}"? 
+              Esta acción no se puede deshacer y se perderán todos los enlaces y notas de esta pestaña.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => setIsDeleteOpen(false)}
+              className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteTab}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
           </div>
         </SortableContext>
       </DndContext>

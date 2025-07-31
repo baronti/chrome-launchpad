@@ -30,6 +30,7 @@ interface SortableShortcutGridProps {
   onReorder: (items: Shortcut[]) => void;
   onOpen: (url: string) => void;
   onRemove: (id: string) => void;
+  onEdit: (id: string, newName: string) => void;
 }
 
 const SortableShortcutGrid: React.FC<SortableShortcutGridProps> = ({
@@ -37,7 +38,8 @@ const SortableShortcutGrid: React.FC<SortableShortcutGridProps> = ({
   category,
   onReorder,
   onOpen,
-  onRemove
+  onRemove,
+  onEdit
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -77,6 +79,7 @@ const SortableShortcutGrid: React.FC<SortableShortcutGridProps> = ({
               category={category}
               onOpen={onOpen}
               onRemove={onRemove}
+              onEdit={onEdit}
             />
           ))}
         </div>

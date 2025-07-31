@@ -197,6 +197,27 @@ const Index = () => {
     });
   };
 
+  const editShortcut = (id: string, newName: string) => {
+    setAppData(prev => ({
+      ...prev,
+      tabs: prev.tabs.map(tab =>
+        tab.id === prev.activeTabId
+          ? { 
+              ...tab, 
+              websites: tab.websites.map(item => 
+                item.id === id ? { ...item, name: newName } : item
+              ) 
+            }
+          : tab
+      )
+    }));
+    
+    toast({
+      title: "Acceso directo actualizado",
+      description: "El nombre ha sido actualizado correctamente"
+    });
+  };
+
   const updateBackground = () => {
     setAppData(prev => ({
       ...prev,
@@ -612,6 +633,7 @@ const Index = () => {
                 onReorder={handleReorder}
                 onOpen={openShortcut}
                 onRemove={removeShortcut}
+                onEdit={editShortcut}
               />
             </div>
 

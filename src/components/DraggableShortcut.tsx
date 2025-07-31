@@ -2,6 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Globe, Folder, Monitor } from 'lucide-react';
 
 interface Shortcut {
@@ -50,49 +51,58 @@ const DraggableShortcut: React.FC<DraggableShortcutProps> = ({
   };
 
   return (
-    <Card 
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      className="group relative bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300 select-none cursor-pointer"
-      onClick={() => onOpen(item.url)}
-    >
-      <CardContent className="p-4 flex flex-col items-center text-center">
-        <div 
-          {...listeners}
-          className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center mb-2 cursor-grab active:cursor-grabbing"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {item.icon ? (
-            <img 
-              src={item.icon} 
-              alt={item.name} 
-              className="w-8 h-8 rounded"
-              onError={(e) => {
-                // Fallback to category icon if image fails to load
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-          ) : null}
-          <div className={item.icon ? 'hidden' : ''}>
-            {getCategoryIcon(category)}
-          </div>
-        </div>
-        <span className="text-white text-sm font-medium truncate w-full">{item.name}</span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove(item.id);
-          }}
-          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold z-50 shadow-lg"
-          title="Eliminar acceso directo"
-        >
-          ×
-        </button>
-      </CardContent>
-    </Card>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Card 
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            className="group relative bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300 select-none cursor-pointer"
+            onClick={() => onOpen(item.url)}
+          >
+            <CardContent className="p-4 flex flex-col items-center text-center">
+              <div 
+                {...listeners}
+                className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center mb-2 cursor-grab active:cursor-grabbing"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {item.icon ? (
+                  <img 
+                    src={item.icon} 
+                    alt={item.name} 
+                    className="w-8 h-8 rounded"
+                    onError={(e) => {
+                      // Fallback to category icon if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <div className={item.icon ? 'hidden' : ''}>
+                  {getCategoryIcon(category)}
+                </div>
+              </div>
+              <span className="text-white text-sm font-medium truncate w-full">{item.name}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(item.id);
+                }}
+                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold z-50 shadow-lg"
+                title="Eliminar acceso directo"
+              >
+                ×
+              </button>
+            </CardContent>
+          </Card>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="text-sm font-medium">{item.name}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 

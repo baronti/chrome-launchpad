@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +14,12 @@ const NotesSection: React.FC<NotesSectionProps> = ({ notes, onNotesUpdate }) => 
   const [currentNotes, setCurrentNotes] = useState(notes);
   const [hasChanges, setHasChanges] = useState(false);
   const { toast } = useToast();
+
+  // Sincronizar el estado local con las notas que vienen del prop
+  useEffect(() => {
+    setCurrentNotes(notes);
+    setHasChanges(false);
+  }, [notes]);
 
   const handleNotesChange = (value: string) => {
     setCurrentNotes(value);

@@ -28,8 +28,8 @@ interface SortableShortcutGridProps {
   items: Shortcut[];
   category: string;
   onReorder: (items: Shortcut[]) => void;
-  onOpen: (url: string, category: string) => void;
-  onRemove: (category: string, id: string) => void;
+  onOpen: (url: string) => void;
+  onRemove: (id: string) => void;
 }
 
 const SortableShortcutGrid: React.FC<SortableShortcutGridProps> = ({

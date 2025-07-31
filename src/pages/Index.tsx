@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import SortableShortcutGrid from '@/components/SortableShortcutGrid';
 import { getAutomaticIcon } from '@/utils/iconUtils';
+import TabManager, { TabData } from '@/components/TabManager';
+import NotesSection from '@/components/NotesSection';
 
 interface Shortcut {
   id: string;
@@ -18,20 +20,28 @@ interface Shortcut {
 }
 
 interface AppData {
-  websites: Shortcut[];
+  tabs: TabData[];
+  activeTabId: string;
   backgroundImage: string;
 }
 
 const DEFAULT_BACKGROUND = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80';
 
 const Index = () => {
-  const [appData, setAppData] = useState<AppData>({
+  const defaultTab: TabData = {
+    id: 'default',
+    name: 'Sitios Web',
     websites: [],
+    notes: ''
+  };
+
+  const [appData, setAppData] = useState<AppData>({
+    tabs: [defaultTab],
+    activeTabId: 'default',
     backgroundImage: DEFAULT_BACKGROUND
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'websites'>('websites');
   const [newShortcut, setNewShortcut] = useState({ name: '', url: '', icon: '' });
   const [newBackground, setNewBackground] = useState('');
   const { toast } = useToast();
@@ -43,20 +53,43 @@ const Index = () => {
       try {
         const parsed = JSON.parse(savedData);
         
-        // Migrate data to include order field if not present
-        const migrateShortcuts = (shortcuts: Shortcut[]) => 
-          shortcuts.map((shortcut, index) => ({
-            ...shortcut,
-            order: shortcut.order ?? index
-          }));
+        // Migrate old data format to new tab-based format
+        if (parsed.websites && !parsed.tabs) {
+          const migrateShortcuts = (shortcuts: Shortcut[]) => 
+            shortcuts.map((shortcut, index) => ({
+              ...shortcut,
+              order: shortcut.order ?? index
+            }));
 
-        const migratedData = {
-          ...parsed,
-          websites: migrateShortcuts(parsed.websites || [])
-        };
+          const migratedData = {
+            tabs: [{
+              id: 'default',
+              name: 'Sitios Web',
+              websites: migrateShortcuts(parsed.websites || []),
+              notes: ''
+            }],
+            activeTabId: 'default',
+            backgroundImage: parsed.backgroundImage || DEFAULT_BACKGROUND
+          };
+          
+          setAppData(migratedData);
+        } else {
+          // Ensure all tabs have migrated shortcuts
+          const migratedTabs = parsed.tabs?.map((tab: TabData) => ({
+            ...tab,
+            websites: tab.websites?.map((shortcut, index) => ({
+              ...shortcut,
+              order: shortcut.order ?? index
+            })) || []
+          })) || [defaultTab];
 
-        setAppData(migratedData);
-        setNewBackground(migratedData.backgroundImage || DEFAULT_BACKGROUND);
+          setAppData({
+            ...parsed,
+            tabs: migratedTabs
+          });
+        }
+        
+        setNewBackground(parsed.backgroundImage || DEFAULT_BACKGROUND);
       } catch (error) {
         console.error('Error parsing saved data:', error);
       }
@@ -68,6 +101,10 @@ const Index = () => {
     localStorage.setItem('dashboard-data', JSON.stringify(appData));
   }, [appData]);
 
+  const getCurrentTab = () => {
+    return appData.tabs.find(tab => tab.id === appData.activeTabId) || appData.tabs[0];
+  };
+
   const addShortcut = () => {
     if (!newShortcut.name || !newShortcut.url) {
       toast({
@@ -78,8 +115,8 @@ const Index = () => {
       return;
     }
 
-    const currentItems = appData[activeTab];
-    const nextOrder = currentItems.length;
+    const currentTab = getCurrentTab();
+    const nextOrder = currentTab.websites.length;
 
     const shortcut: Shortcut = {
       id: Date.now().toString(),
@@ -91,7 +128,11 @@ const Index = () => {
 
     setAppData(prev => ({
       ...prev,
-      [activeTab]: [...prev[activeTab], shortcut]
+      tabs: prev.tabs.map(tab =>
+        tab.id === prev.activeTabId
+          ? { ...tab, websites: [...tab.websites, shortcut] }
+          : tab
+      )
     }));
 
     setNewShortcut({ name: '', url: '', icon: '' });
@@ -99,7 +140,7 @@ const Index = () => {
     
     toast({
       title: "Acceso directo agregado",
-      description: `${shortcut.name} ha sido agregado a ${activeTab}`
+      description: `${shortcut.name} ha sido agregado a ${currentTab.name}`
     });
   };
 
@@ -113,7 +154,7 @@ const Index = () => {
       return;
     }
 
-    const detectedIcon = getAutomaticIcon(newShortcut.url, activeTab);
+    const detectedIcon = getAutomaticIcon(newShortcut.url, 'websites');
     setNewShortcut(prev => ({ ...prev, icon: detectedIcon }));
     
     toast({
@@ -122,26 +163,26 @@ const Index = () => {
     });
   };
 
-  const handleReorder = (category: 'websites', reorderedItems: Shortcut[]) => {
+  const handleReorder = (reorderedItems: Shortcut[]) => {
     setAppData(prev => ({
       ...prev,
-      [category]: reorderedItems
+      tabs: prev.tabs.map(tab =>
+        tab.id === prev.activeTabId
+          ? { ...tab, websites: reorderedItems }
+          : tab
+      )
     }));
   };
 
-  const removeShortcut = (category: keyof AppData, id: string) => {
-    console.log('removeShortcut llamado con:', { category, id });
-    if (category === 'backgroundImage') return;
-    
-    setAppData(prev => {
-      console.log('Estado anterior:', prev[category]);
-      const newData = {
-        ...prev,
-        [category]: prev[category].filter(item => item.id !== id)
-      };
-      console.log('Estado nuevo:', newData[category]);
-      return newData;
-    });
+  const removeShortcut = (id: string) => {
+    setAppData(prev => ({
+      ...prev,
+      tabs: prev.tabs.map(tab =>
+        tab.id === prev.activeTabId
+          ? { ...tab, websites: tab.websites.filter(item => item.id !== id) }
+          : tab
+      )
+    }));
     
     toast({
       title: "Acceso directo eliminado",
@@ -238,16 +279,69 @@ const Index = () => {
     event.target.value = '';
   };
 
-  const openShortcut = (url: string, category: string) => {
-    if (category === 'websites') {
-      window.open(url.startsWith('http') ? url : `https://${url}`, '_blank');
-    }
+  const openShortcut = (url: string) => {
+    window.open(url.startsWith('http') ? url : `https://${url}`, '_blank');
+  };
+
+  // Tab management functions
+  const handleTabSelect = (tabId: string) => {
+    setAppData(prev => ({ ...prev, activeTabId: tabId }));
+  };
+
+  const handleTabCreate = (name: string) => {
+    const newTab: TabData = {
+      id: Date.now().toString(),
+      name,
+      websites: [],
+      notes: ''
+    };
+    
+    setAppData(prev => ({
+      ...prev,
+      tabs: [...prev.tabs, newTab],
+      activeTabId: newTab.id
+    }));
+  };
+
+  const handleTabUpdate = (tabId: string, name: string) => {
+    setAppData(prev => ({
+      ...prev,
+      tabs: prev.tabs.map(tab =>
+        tab.id === tabId ? { ...tab, name } : tab
+      )
+    }));
+  };
+
+  const handleTabDelete = (tabId: string) => {
+    setAppData(prev => {
+      const newTabs = prev.tabs.filter(tab => tab.id !== tabId);
+      const newActiveTabId = prev.activeTabId === tabId ? newTabs[0]?.id : prev.activeTabId;
+      
+      return {
+        ...prev,
+        tabs: newTabs,
+        activeTabId: newActiveTabId
+      };
+    });
+  };
+
+  const handleNotesUpdate = (notes: string) => {
+    setAppData(prev => ({
+      ...prev,
+      tabs: prev.tabs.map(tab =>
+        tab.id === prev.activeTabId
+          ? { ...tab, notes }
+          : tab
+      )
+    }));
   };
 
   // Sort items by order for display
   const getSortedItems = (items: Shortcut[]) => {
     return [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
   };
+
+  const currentTab = getCurrentTab();
 
   return (
     <div 
@@ -348,92 +442,107 @@ const Index = () => {
 
         {/* Content */}
         <div className="w-full">
-          <div className="bg-white/10 backdrop-blur-md rounded-lg p-1 mb-6 inline-flex">
-            <div className="bg-white/20 rounded px-4 py-2 text-white">
-              <Globe className="w-4 h-4 mr-2 inline" />
-              Sitios Web
-            </div>
-          </div>
+          <TabManager
+            tabs={appData.tabs}
+            activeTabId={appData.activeTabId}
+            onTabSelect={handleTabSelect}
+            onTabCreate={handleTabCreate}
+            onTabUpdate={handleTabUpdate}
+            onTabDelete={handleTabDelete}
+          />
 
-          <div className="mt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold text-white">Sitios Web</h2>
-              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    onClick={() => setActiveTab('websites')}
-                    className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Agregar Sitio
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-gray-900 border-gray-700">
-                  <DialogHeader>
-                    <DialogTitle className="text-white">Agregar Sitio Web</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="name" className="text-white">Nombre</Label>
-                      <Input
-                        id="name"
-                        value={newShortcut.name}
-                        onChange={(e) => setNewShortcut(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Google, Facebook, etc."
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="url" className="text-white">URL</Label>
-                      <Input
-                        id="url"
-                        value={newShortcut.url}
-                        onChange={(e) => setNewShortcut(prev => ({ ...prev, url: e.target.value }))}
-                        placeholder="https://google.com"
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="icon"
-                          value={newShortcut.icon}
-                          onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
-                          placeholder="https://ejemplo.com/favicon.ico"
-                          className="bg-gray-800 border-gray-600 text-white flex-1"
-                        />
-                        <Button
-                          type="button"
-                          onClick={autoDetectIcon}
-                          variant="outline"
-                          size="icon"
-                          className="bg-gray-800 border-gray-600 hover:bg-gray-700"
-                        >
-                          <Wand2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      {newShortcut.icon && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
-                          <span className="text-sm text-gray-400">Vista previa del icono</span>
-                        </div>
-                      )}
-                    </div>
-                    <Button onClick={addShortcut} className="w-full">
-                      Agregar
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Websites Section */}
+            <div className="lg:col-span-2">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
+                  <Globe className="w-6 h-6" />
+                  {currentTab.name} - Enlaces
+                </h2>
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Agregar Enlace
                     </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogTrigger>
+                  <DialogContent className="bg-gray-900 border-gray-700">
+                    <DialogHeader>
+                      <DialogTitle className="text-white">Agregar Enlace Web</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="name" className="text-white">Nombre</Label>
+                        <Input
+                          id="name"
+                          value={newShortcut.name}
+                          onChange={(e) => setNewShortcut(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Google, Facebook, etc."
+                          className="bg-gray-800 border-gray-600 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="url" className="text-white">URL</Label>
+                        <Input
+                          id="url"
+                          value={newShortcut.url}
+                          onChange={(e) => setNewShortcut(prev => ({ ...prev, url: e.target.value }))}
+                          placeholder="https://google.com"
+                          className="bg-gray-800 border-gray-600 text-white"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="icon"
+                            value={newShortcut.icon}
+                            onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
+                            placeholder="https://ejemplo.com/favicon.ico"
+                            className="bg-gray-800 border-gray-600 text-white flex-1"
+                          />
+                          <Button
+                            type="button"
+                            onClick={autoDetectIcon}
+                            variant="outline"
+                            size="icon"
+                            className="bg-gray-800 border-gray-600 hover:bg-gray-700"
+                          >
+                            <Wand2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        {newShortcut.icon && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
+                            <span className="text-sm text-gray-400">Vista previa del icono</span>
+                          </div>
+                        )}
+                      </div>
+                      <Button onClick={addShortcut} className="w-full">
+                        Agregar
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <SortableShortcutGrid 
+                items={getSortedItems(currentTab.websites)} 
+                category="websites"
+                onReorder={handleReorder}
+                onOpen={openShortcut}
+                onRemove={removeShortcut}
+              />
             </div>
-            <SortableShortcutGrid 
-              items={getSortedItems(appData.websites)} 
-              category="websites"
-              onReorder={(items) => handleReorder('websites', items)}
-              onOpen={openShortcut}
-              onRemove={removeShortcut}
-            />
+
+            {/* Notes Section */}
+            <div className="lg:col-span-1">
+              <NotesSection
+                notes={currentTab.notes}
+                onNotesUpdate={handleNotesUpdate}
+              />
+            </div>
           </div>
         </div>
       </div>

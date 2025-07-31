@@ -15,8 +15,8 @@ interface Shortcut {
 interface DraggableShortcutProps {
   item: Shortcut;
   category: string;
-  onOpen: (url: string, category: string) => void;
-  onRemove: (category: string, id: string) => void;
+  onOpen: (url: string) => void;
+  onRemove: (id: string) => void;
 }
 
 const DraggableShortcut: React.FC<DraggableShortcutProps> = ({
@@ -55,7 +55,7 @@ const DraggableShortcut: React.FC<DraggableShortcutProps> = ({
       style={style}
       {...attributes}
       className="group relative bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300 select-none cursor-pointer"
-      onClick={() => onOpen(item.url, category)}
+      onClick={() => onOpen(item.url)}
     >
       <CardContent className="p-4 flex flex-col items-center text-center">
         <div 
@@ -84,8 +84,7 @@ const DraggableShortcut: React.FC<DraggableShortcutProps> = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            console.log('Eliminando shortcut:', { category, id: item.id, name: item.name });
-            onRemove(category, item.id);
+            onRemove(item.id);
           }}
           className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold z-50 shadow-lg"
           title="Eliminar acceso directo"

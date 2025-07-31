@@ -31,6 +31,8 @@ const Index = () => {
   const defaultTab: TabData = {
     id: 'default',
     name: 'Sitios Web',
+    color: '',
+    order: 0,
     websites: [],
     notes: ''
   };
@@ -65,6 +67,8 @@ const Index = () => {
             tabs: [{
               id: 'default',
               name: 'Sitios Web',
+              color: '',
+              order: 0,
               websites: migrateShortcuts(parsed.websites || []),
               notes: ''
             }],
@@ -74,9 +78,11 @@ const Index = () => {
           
           setAppData(migratedData);
         } else {
-          // Ensure all tabs have migrated shortcuts
-          const migratedTabs = parsed.tabs?.map((tab: TabData) => ({
+          // Ensure all tabs have migrated shortcuts and required properties
+          const migratedTabs = parsed.tabs?.map((tab: TabData, index: number) => ({
             ...tab,
+            color: tab.color || '',
+            order: tab.order ?? index,
             websites: tab.websites?.map((shortcut, index) => ({
               ...shortcut,
               order: shortcut.order ?? index
@@ -288,10 +294,12 @@ const Index = () => {
     setAppData(prev => ({ ...prev, activeTabId: tabId }));
   };
 
-  const handleTabCreate = (name: string) => {
+  const handleTabCreate = (name: string, color?: string) => {
     const newTab: TabData = {
       id: Date.now().toString(),
       name,
+      color: color || '',
+      order: appData.tabs.length,
       websites: [],
       notes: ''
     };
@@ -303,11 +311,11 @@ const Index = () => {
     }));
   };
 
-  const handleTabUpdate = (tabId: string, name: string) => {
+  const handleTabUpdate = (tabId: string, name: string, color?: string) => {
     setAppData(prev => ({
       ...prev,
       tabs: prev.tabs.map(tab =>
-        tab.id === tabId ? { ...tab, name } : tab
+        tab.id === tabId ? { ...tab, name, color: color || tab.color } : tab
       )
     }));
   };
@@ -323,6 +331,13 @@ const Index = () => {
         activeTabId: newActiveTabId
       };
     });
+  };
+
+  const handleTabReorder = (reorderedTabs: TabData[]) => {
+    setAppData(prev => ({
+      ...prev,
+      tabs: reorderedTabs
+    }));
   };
 
   const handleNotesUpdate = (notes: string) => {
@@ -443,12 +458,13 @@ const Index = () => {
         {/* Content */}
         <div className="w-full">
           <TabManager
-            tabs={appData.tabs}
+            tabs={appData.tabs.sort((a, b) => a.order - b.order)}
             activeTabId={appData.activeTabId}
             onTabSelect={handleTabSelect}
             onTabCreate={handleTabCreate}
             onTabUpdate={handleTabUpdate}
             onTabDelete={handleTabDelete}
+            onTabReorder={handleTabReorder}
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

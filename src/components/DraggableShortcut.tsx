@@ -110,8 +110,10 @@ const DraggableShortcut: React.FC<DraggableShortcutProps> = ({
                 <DialogTrigger asChild>
                   <button
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       setEditName(item.name);
+                      setIsEditOpen(true);
                     }}
                     className="absolute top-1 right-8 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-blue-500/80 hover:bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs z-50"
                     title="Editar nombre"
@@ -160,6 +162,7 @@ const DraggableShortcut: React.FC<DraggableShortcutProps> = ({
               {/* Delete Button */}
               <button
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   onRemove(item.id);
                 }}

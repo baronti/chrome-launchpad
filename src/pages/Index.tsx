@@ -241,7 +241,21 @@ const Index = () => {
   };
 
   const exportData = () => {
-    const dataStr = JSON.stringify(appData, null, 2);
+    // Asegurar que todos los datos estén completos antes de exportar
+    const exportData = {
+      ...appData,
+      tabs: appData.tabs.map((tab, index) => ({
+        ...tab,
+        color: tab.color || '',
+        order: tab.order ?? index,
+        websites: tab.websites.map((website, idx) => ({
+          ...website,
+          order: website.order ?? idx
+        }))
+      }))
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
@@ -266,8 +280,56 @@ const Index = () => {
     reader.onload = (e) => {
       try {
         const importedData = JSON.parse(e.target?.result as string);
-        setAppData(importedData);
-        setNewBackground(importedData.backgroundImage || DEFAULT_BACKGROUND);
+        
+        // Migrar y validar datos importados
+        let processedData;
+        
+        if (importedData.websites && !importedData.tabs) {
+          // Migrar formato antiguo a nuevo formato con pestañas
+          const migrateShortcuts = (shortcuts: Shortcut[]) => 
+            shortcuts.map((shortcut, index) => ({
+              ...shortcut,
+              order: shortcut.order ?? index
+            }));
+
+          processedData = {
+            tabs: [{
+              id: 'default',
+              name: 'Sitios Web',
+              color: '',
+              order: 0,
+              websites: migrateShortcuts(importedData.websites || []),
+              notes: ''
+            }],
+            activeTabId: 'default',
+            backgroundImage: importedData.backgroundImage || DEFAULT_BACKGROUND
+          };
+        } else {
+          // Asegurar que todos los tabs tengan las propiedades requeridas
+          const migratedTabs = importedData.tabs?.map((tab: any, index: number) => ({
+            id: tab.id || Date.now().toString(),
+            name: tab.name || `Pestaña ${index + 1}`,
+            color: tab.color || '',
+            order: tab.order ?? index,
+            websites: (tab.websites || []).map((website: any, idx: number) => ({
+              id: website.id || Date.now().toString(),
+              name: website.name || 'Sin nombre',
+              url: website.url || '',
+              icon: website.icon || '',
+              order: website.order ?? idx
+            })),
+            notes: tab.notes || ''
+          })) || [defaultTab];
+
+          processedData = {
+            tabs: migratedTabs,
+            activeTabId: importedData.activeTabId || migratedTabs[0]?.id || 'default',
+            backgroundImage: importedData.backgroundImage || DEFAULT_BACKGROUND
+          };
+        }
+        
+        setAppData(processedData);
+        setNewBackground(processedData.backgroundImage);
         
         toast({
           title: "Datos importados",

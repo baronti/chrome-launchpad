@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Download, Upload, Settings, Globe, Folder, Monitor, Wand2 } from 'lucide-react';
+import { Plus, Download, Upload, Settings, Globe, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { useToast } from '@/hooks/use-toast';
 import SortableShortcutGrid from '@/components/SortableShortcutGrid';
 import { getAutomaticIcon } from '@/utils/iconUtils';
@@ -19,8 +19,6 @@ interface Shortcut {
 
 interface AppData {
   websites: Shortcut[];
-  applications: Shortcut[];
-  folders: Shortcut[];
   backgroundImage: string;
 }
 
@@ -29,13 +27,11 @@ const DEFAULT_BACKGROUND = 'https://images.unsplash.com/photo-1506905925346-21bd
 const Index = () => {
   const [appData, setAppData] = useState<AppData>({
     websites: [],
-    applications: [],
-    folders: [],
     backgroundImage: DEFAULT_BACKGROUND
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'websites' | 'applications' | 'folders'>('websites');
+  const [activeTab, setActiveTab] = useState<'websites'>('websites');
   const [newShortcut, setNewShortcut] = useState({ name: '', url: '', icon: '' });
   const [newBackground, setNewBackground] = useState('');
   const { toast } = useToast();
@@ -56,9 +52,7 @@ const Index = () => {
 
         const migratedData = {
           ...parsed,
-          websites: migrateShortcuts(parsed.websites || []),
-          applications: migrateShortcuts(parsed.applications || []),
-          folders: migrateShortcuts(parsed.folders || [])
+          websites: migrateShortcuts(parsed.websites || [])
         };
 
         setAppData(migratedData);
@@ -128,7 +122,7 @@ const Index = () => {
     });
   };
 
-  const handleReorder = (category: 'websites' | 'applications' | 'folders', reorderedItems: Shortcut[]) => {
+  const handleReorder = (category: 'websites', reorderedItems: Shortcut[]) => {
     setAppData(prev => ({
       ...prev,
       [category]: reorderedItems
@@ -247,18 +241,6 @@ const Index = () => {
   const openShortcut = (url: string, category: string) => {
     if (category === 'websites') {
       window.open(url.startsWith('http') ? url : `https://${url}`, '_blank');
-    } else if (category === 'applications') {
-      // For applications, we'll show a notification since we can't directly open desktop apps from browser
-      toast({
-        title: "Aplicación",
-        description: `Para abrir: ${url}`,
-      });
-    } else if (category === 'folders') {
-      // For folders, we'll show the path since we can't directly open folders from browser
-      toast({
-        title: "Carpeta",
-        description: `Ruta: ${url}`,
-      });
     }
   };
 
@@ -364,24 +346,16 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="websites" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-white/10 backdrop-blur-md">
-            <TabsTrigger value="websites" className="text-white data-[state=active]:bg-white/20">
-              <Globe className="w-4 h-4 mr-2" />
+        {/* Content */}
+        <div className="w-full">
+          <div className="bg-white/10 backdrop-blur-md rounded-lg p-1 mb-6 inline-flex">
+            <div className="bg-white/20 rounded px-4 py-2 text-white">
+              <Globe className="w-4 h-4 mr-2 inline" />
               Sitios Web
-            </TabsTrigger>
-            <TabsTrigger value="applications" className="text-white data-[state=active]:bg-white/20">
-              <Monitor className="w-4 h-4 mr-2" />
-              Aplicaciones
-            </TabsTrigger>
-            <TabsTrigger value="folders" className="text-white data-[state=active]:bg-white/20">
-              <Folder className="w-4 h-4 mr-2" />
-              Carpetas
-            </TabsTrigger>
-          </TabsList>
+            </div>
+          </div>
 
-          <TabsContent value="websites" className="mt-6">
+          <div className="mt-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-semibold text-white">Sitios Web</h2>
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -460,170 +434,8 @@ const Index = () => {
               onOpen={openShortcut}
               onRemove={removeShortcut}
             />
-          </TabsContent>
-
-          <TabsContent value="applications" className="mt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold text-white">Aplicaciones</h2>
-              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    onClick={() => setActiveTab('applications')}
-                    className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Agregar App
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-gray-900 border-gray-700">
-                  <DialogHeader>
-                    <DialogTitle className="text-white">Agregar Aplicación</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="name" className="text-white">Nombre</Label>
-                      <Input
-                        id="name"
-                        value={newShortcut.name}
-                        onChange={(e) => setNewShortcut(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Visual Studio Code, Photoshop, etc."
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="url" className="text-white">Ruta del ejecutable</Label>
-                      <Input
-                        id="url"
-                        value={newShortcut.url}
-                        onChange={(e) => setNewShortcut(prev => ({ ...prev, url: e.target.value }))}
-                        placeholder="C:\Program Files\App\app.exe"
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="icon"
-                          value={newShortcut.icon}
-                          onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
-                          placeholder="https://ejemplo.com/icon.png"
-                          className="bg-gray-800 border-gray-600 text-white flex-1"
-                        />
-                        <Button
-                          type="button"
-                          onClick={autoDetectIcon}
-                          variant="outline"
-                          size="icon"
-                          className="bg-gray-800 border-gray-600 hover:bg-gray-700"
-                        >
-                          <Wand2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      {newShortcut.icon && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
-                          <span className="text-sm text-gray-400">Vista previa del icono</span>
-                        </div>
-                      )}
-                    </div>
-                    <Button onClick={addShortcut} className="w-full">
-                      Agregar
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-            <SortableShortcutGrid 
-              items={getSortedItems(appData.applications)} 
-              category="applications"
-              onReorder={(items) => handleReorder('applications', items)}
-              onOpen={openShortcut}
-              onRemove={removeShortcut}
-            />
-          </TabsContent>
-
-          <TabsContent value="folders" className="mt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold text-white">Carpetas</h2>
-              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    onClick={() => setActiveTab('folders')}
-                    className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Agregar Carpeta
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-gray-900 border-gray-700">
-                  <DialogHeader>
-                    <DialogTitle className="text-white">Agregar Carpeta</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="name" className="text-white">Nombre</Label>
-                      <Input
-                        id="name"
-                        value={newShortcut.name}
-                        onChange={(e) => setNewShortcut(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Documentos, Descargas, etc."
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="url" className="text-white">Ruta de la carpeta</Label>
-                      <Input
-                        id="url"
-                        value={newShortcut.url}
-                        onChange={(e) => setNewShortcut(prev => ({ ...prev, url: e.target.value }))}
-                        placeholder="C:\Users\Usuario\Documents"
-                        className="bg-gray-800 border-gray-600 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="icon"
-                          value={newShortcut.icon}
-                          onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
-                          placeholder="https://ejemplo.com/folder-icon.png"
-                          className="bg-gray-800 border-gray-600 text-white flex-1"
-                        />
-                        <Button
-                          type="button"
-                          onClick={autoDetectIcon}
-                          variant="outline"
-                          size="icon"
-                          className="bg-gray-800 border-gray-600 hover:bg-gray-700"
-                        >
-                          <Wand2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      {newShortcut.icon && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
-                          <span className="text-sm text-gray-400">Vista previa del icono</span>
-                        </div>
-                      )}
-                    </div>
-                    <Button onClick={addShortcut} className="w-full">
-                      Agregar
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-            <SortableShortcutGrid 
-              items={getSortedItems(appData.folders)} 
-              category="folders"
-              onReorder={(items) => handleReorder('folders', items)}
-              onOpen={openShortcut}
-              onRemove={removeShortcut}
-            />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );

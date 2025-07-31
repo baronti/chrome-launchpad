@@ -83,6 +83,7 @@ const Index = () => {
             ...tab,
             color: tab.color || '',
             order: tab.order ?? index,
+            notes: tab.notes || '', // Asegurar que las notas estén inicializadas
             websites: tab.websites?.map((shortcut, index) => ({
               ...shortcut,
               order: shortcut.order ?? index

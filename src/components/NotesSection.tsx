@@ -37,7 +37,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({ notes, onNotesUpdate }) => 
   };
 
   return (
-    <Card className="bg-white/10 backdrop-blur-md border-white/20 h-[900px] flex flex-col overflow-hidden">
+    <Card className="bg-white/10 backdrop-blur-md border-white/20 h-[750px] flex flex-col overflow-hidden">
       <CardHeader className="pb-2 flex-shrink-0">
         <CardTitle className="text-white flex items-center gap-2">
           <FileText className="w-5 h-5" />

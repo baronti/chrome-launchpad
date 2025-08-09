@@ -37,20 +37,19 @@ const NotesSection: React.FC<NotesSectionProps> = ({ notes, onNotesUpdate }) => 
   };
 
   return (
-    <Card className="bg-white/10 backdrop-blur-md border-white/20">
-      <CardHeader className="pb-3">
+    <Card className="bg-white/10 backdrop-blur-md border-white/20 h-screen flex flex-col">
+      <CardHeader className="pb-3 flex-shrink-0">
         <CardTitle className="text-white flex items-center gap-2">
           <FileText className="w-5 h-5" />
-          Notas del Proyecto
+          Notas
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 flex-1 flex flex-col">
         <Textarea
           value={currentNotes}
           onChange={(e) => handleNotesChange(e.target.value)}
           placeholder="Escribe aquí tus notas, ideas, tareas pendientes, enlaces importantes..."
-          className="bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[120px] resize-y"
-          rows={6}
+          className="bg-white/10 border-white/20 text-white placeholder:text-white/60 flex-1 resize-none"
         />
         
         {hasChanges && (

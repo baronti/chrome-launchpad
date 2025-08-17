@@ -12,6 +12,7 @@ import SortableShortcutGrid from '@/components/SortableShortcutGrid';
 import { getAutomaticIcon } from '@/utils/iconUtils';
 import TabManager, { TabData } from '@/components/TabManager';
 import NotesSection from '@/components/NotesSection';
+import UpcomingEvents from '@/components/UpcomingEvents';
 
 interface Shortcut {
   id: string;
@@ -574,92 +575,98 @@ const Index = () => {
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Websites Section */}
-            <div className="lg:col-span-2">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
-                  <Globe className="w-6 h-6" />
-                  {currentTab.name} - Enlaces
-                </h2>
-                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Agregar Enlace
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-gray-900 border-gray-700">
-                    <DialogHeader>
-                      <DialogTitle className="text-white">Agregar Enlace Web</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="name" className="text-white">Nombre</Label>
-                        <Input
-                          id="name"
-                          value={newShortcut.name}
-                          onChange={(e) => setNewShortcut(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="Google, Facebook, etc."
-                          className="bg-gray-800 border-gray-600 text-white"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="url" className="text-white">URL</Label>
-                        <Input
-                          id="url"
-                          value={newShortcut.url}
-                          onChange={(e) => setNewShortcut(prev => ({ ...prev, url: e.target.value }))}
-                          placeholder="https://google.com"
-                          className="bg-gray-800 border-gray-600 text-white"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id="icon"
-                            value={newShortcut.icon}
-                            onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
-                            placeholder="https://ejemplo.com/favicon.ico"
-                            className="bg-gray-800 border-gray-600 text-white flex-1"
-                          />
-                          <Button
-                            type="button"
-                            onClick={autoDetectIcon}
-                            variant="outline"
-                            size="icon"
-                            className="bg-gray-800 border-gray-600 hover:bg-gray-700"
-                          >
-                            <Wand2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        {newShortcut.icon && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
-                            <span className="text-sm text-gray-400">Vista previa del icono</span>
-                          </div>
-                        )}
-                      </div>
-                      <Button onClick={addShortcut} className="w-full">
-                        Agregar
+            {/* Left Column - Websites and Events */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Websites Section */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
+                    <Globe className="w-6 h-6" />
+                    {currentTab.name} - Enlaces
+                  </h2>
+                  <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Agregar Enlace
                       </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent className="bg-gray-900 border-gray-700">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Agregar Enlace Web</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="name" className="text-white">Nombre</Label>
+                          <Input
+                            id="name"
+                            value={newShortcut.name}
+                            onChange={(e) => setNewShortcut(prev => ({ ...prev, name: e.target.value }))}
+                            placeholder="Google, Facebook, etc."
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="url" className="text-white">URL</Label>
+                          <Input
+                            id="url"
+                            value={newShortcut.url}
+                            onChange={(e) => setNewShortcut(prev => ({ ...prev, url: e.target.value }))}
+                            placeholder="https://google.com"
+                            className="bg-gray-800 border-gray-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="icon"
+                              value={newShortcut.icon}
+                              onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
+                              placeholder="https://ejemplo.com/favicon.ico"
+                              className="bg-gray-800 border-gray-600 text-white flex-1"
+                            />
+                            <Button
+                              type="button"
+                              onClick={autoDetectIcon}
+                              variant="outline"
+                              size="icon"
+                              className="bg-gray-800 border-gray-600 hover:bg-gray-700"
+                            >
+                              <Wand2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          {newShortcut.icon && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <img src={newShortcut.icon} alt="Preview" className="w-6 h-6 rounded" />
+                              <span className="text-sm text-gray-400">Vista previa del icono</span>
+                            </div>
+                          )}
+                        </div>
+                        <Button onClick={addShortcut} className="w-full">
+                          Agregar
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <SortableShortcutGrid 
+                  items={getSortedItems(currentTab.websites)} 
+                  category="websites"
+                  onReorder={handleReorder}
+                  onOpen={openShortcut}
+                  onRemove={removeShortcut}
+                  onEdit={editShortcut}
+                />
               </div>
-              <SortableShortcutGrid 
-                items={getSortedItems(currentTab.websites)} 
-                category="websites"
-                onReorder={handleReorder}
-                onOpen={openShortcut}
-                onRemove={removeShortcut}
-                onEdit={editShortcut}
-              />
+
+              {/* Upcoming Events Section */}
+              <UpcomingEvents />
             </div>
 
-            {/* Notes Section */}
+            {/* Right Column - Notes Section */}
             <div className="lg:col-span-1">
               <NotesSection
                 notes={currentTab.notes}

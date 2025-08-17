@@ -1,24 +1,27 @@
 #!/bin/bash
 
-# Script de despliegue para dashboard.baronti.cl
-# Ejecutar en tu máquina local
+# Script de deploy completo para servidor VPS
+# Ejecutar directamente en el servidor donde está clonado el repositorio
 
-echo "🚀 Iniciando proceso de deploy para dashboard.baronti.cl"
-echo "================================================="
+echo "🚀 Iniciando deploy completo del dashboard"
+echo "=========================================="
 
 # Colores para output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
-# Configuración (personaliza estos valores)
-VPS_USER="usuario"  # Reemplaza con tu usuario
-VPS_HOST="tu-servidor-ip"  # Reemplaza con tu IP del servidor
-VPS_PATH="/home/usuario/public_html/dashboard.baronti.cl"  # Ajusta la ruta
+# Configuración del servidor (personaliza estos valores)
+SERVER_USER="usuario"  # Reemplaza con tu usuario del servidor
+DOMAIN="dashboard.baronti.cl"
+WEB_ROOT="/home/$SERVER_USER/public_html/$DOMAIN"
+PROJECT_DIR="$(pwd)"
+BACKUP_DIR="/home/$SERVER_USER/backups"
 
-# Función para mostrar errores
+# Función para mostrar errores y salir
 show_error() {
     echo -e "${RED}❌ Error: $1${NC}"
     exit 1
@@ -39,52 +42,130 @@ show_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
-# Verificar que estamos en el directorio correcto del proyecto
+# Función para mostrar proceso
+show_process() {
+    echo -e "${PURPLE}🔄 $1${NC}"
+}
+
+# Función para crear backup
+create_backup() {
+    if [ -d "$WEB_ROOT" ]; then
+        show_info "Creando backup del sitio actual..."
+        mkdir -p "$BACKUP_DIR"
+        BACKUP_NAME="dashboard-backup-$(date +%Y%m%d-%H%M%S)"
+        cp -r "$WEB_ROOT" "$BACKUP_DIR/$BACKUP_NAME" || show_error "Fallo al crear backup"
+        show_success "Backup creado: $BACKUP_DIR/$BACKUP_NAME"
+        echo "$BACKUP_DIR/$BACKUP_NAME" > /tmp/last_backup_path
+    else
+        show_info "No existe sitio anterior, omitiendo backup..."
+    fi
+}
+
+# Función para rollback
+rollback() {
+    if [ -f "/tmp/last_backup_path" ]; then
+        BACKUP_PATH=$(cat /tmp/last_backup_path)
+        if [ -d "$BACKUP_PATH" ]; then
+            show_warning "Ejecutando rollback..."
+            rm -rf "$WEB_ROOT"
+            cp -r "$BACKUP_PATH" "$WEB_ROOT"
+            show_success "Rollback completado"
+        fi
+    fi
+}
+
+# Verificar que estamos en un repositorio git
+if [ ! -d ".git" ]; then
+    show_error "No se encontró repositorio git. Ejecuta este script desde el directorio del proyecto clonado."
+fi
+
+# Verificar que existe package.json
 if [ ! -f "package.json" ]; then
     show_error "No se encontró package.json. Asegúrate de estar en el directorio raíz del proyecto."
 fi
 
-# Paso 1: Instalar dependencias
-show_info "Paso 1: Instalando dependencias..."
-npm install || show_error "Fallo al instalar dependencias"
-show_success "Dependencias instaladas"
+# Paso 1: Actualizar código desde repositorio
+show_process "Paso 1: Actualizando código desde repositorio..."
+git fetch origin || show_error "Fallo al hacer fetch del repositorio"
+git pull origin main || show_error "Fallo al hacer pull del repositorio"
+show_success "Código actualizado desde repositorio"
 
-# Paso 2: Compilar para producción
-show_info "Paso 2: Compilando proyecto para producción..."
+# Paso 2: Instalar/actualizar dependencias
+show_process "Paso 2: Instalando dependencias..."
+npm install || show_error "Fallo al instalar dependencias"
+show_success "Dependencias instaladas correctamente"
+
+# Paso 3: Limpiar build anterior
+show_process "Paso 3: Limpiando build anterior..."
+rm -rf dist/
+show_success "Build anterior eliminado"
+
+# Paso 4: Compilar para producción
+show_process "Paso 4: Compilando proyecto para producción..."
 npm run build || show_error "Fallo al compilar el proyecto"
 show_success "Proyecto compilado exitosamente"
 
-# Paso 3: Verificar que la carpeta dist existe
+# Verificar que la carpeta dist se generó correctamente
 if [ ! -d "dist" ]; then
     show_error "La carpeta 'dist' no se generó. Verifica el proceso de build."
 fi
 
-# Paso 4: Comprimir archivos
-show_info "Paso 3: Comprimiendo archivos..."
-tar -czf dashboard-build.tar.gz -C dist .
-show_success "Archivos comprimidos en dashboard-build.tar.gz"
+# Verificar que dist no está vacía
+if [ -z "$(ls -A dist)" ]; then
+    show_error "La carpeta 'dist' está vacía. Verifica el proceso de build."
+fi
 
-# Paso 5: Mostrar siguiente paso
+# Paso 5: Crear backup del sitio actual
+show_process "Paso 5: Creando backup del sitio actual..."
+create_backup
+
+# Paso 6: Preparar directorio web
+show_process "Paso 6: Preparando directorio web..."
+sudo mkdir -p "$WEB_ROOT" || show_error "Fallo al crear directorio web"
+show_success "Directorio web preparado"
+
+# Paso 7: Desplegar archivos
+show_process "Paso 7: Desplegando archivos al servidor web..."
+# Limpiar directorio web actual
+sudo rm -rf "$WEB_ROOT"/* || show_error "Fallo al limpiar directorio web"
+
+# Copiar nuevos archivos
+sudo cp -r dist/* "$WEB_ROOT"/ || {
+    show_error "Fallo al copiar archivos. Ejecutando rollback..."
+    rollback
+    show_error "Deploy fallido, sitio restaurado"
+}
+show_success "Archivos desplegados correctamente"
+
+# Paso 8: Configurar permisos
+show_process "Paso 8: Configurando permisos..."
+sudo chown -R "$SERVER_USER:$SERVER_USER" "$WEB_ROOT" || show_error "Fallo al configurar propietario"
+sudo chmod -R 755 "$WEB_ROOT" || show_error "Fallo al configurar permisos"
+show_success "Permisos configurados correctamente"
+
+# Paso 9: Verificar archivos principales
+show_process "Paso 9: Verificando deploy..."
+if [ ! -f "$WEB_ROOT/index.html" ]; then
+    show_error "index.html no encontrado en el directorio web. Deploy fallido."
+fi
+
+# Contar archivos desplegados
+FILE_COUNT=$(find "$WEB_ROOT" -type f | wc -l)
+show_info "Archivos desplegados: $FILE_COUNT"
+
+# Paso 10: Limpiar archivos temporales
+show_process "Paso 10: Limpieza final..."
+rm -f /tmp/last_backup_path
+show_success "Limpieza completada"
+
+# Resumen final
 echo ""
-show_warning "SIGUIENTE PASO - Ejecutar en tu VPS:"
+echo "🎉 ¡DEPLOY COMPLETADO EXITOSAMENTE! 🎉"
+echo "====================================="
+echo -e "${GREEN}✅ Sitio actualizado en: https://$DOMAIN${NC}"
+echo -e "${BLUE}📁 Archivos en: $WEB_ROOT${NC}"
+echo -e "${BLUE}📊 Total de archivos: $FILE_COUNT${NC}"
+echo -e "${YELLOW}💾 Backup disponible en: $BACKUP_DIR${NC}"
 echo ""
-echo -e "${BLUE}# 1. Subir archivo al VPS:${NC}"
-echo "scp dashboard-build.tar.gz $VPS_USER@$VPS_HOST:/home/$VPS_USER/"
+show_info "Verifica que el sitio funcione correctamente visitando: https://$DOMAIN"
 echo ""
-echo -e "${BLUE}# 2. Conectar por SSH:${NC}"
-echo "ssh $VPS_USER@$VPS_HOST"
-echo ""
-echo -e "${BLUE}# 3. Ejecutar en el VPS:${NC}"
-echo "cd ~"
-echo "sudo mkdir -p $VPS_PATH"
-echo "sudo tar -xzf dashboard-build.tar.gz -C $VPS_PATH"
-echo "sudo chown -R $VPS_USER:$VPS_USER $VPS_PATH"
-echo "sudo chmod -R 755 $VPS_PATH"
-echo "rm dashboard-build.tar.gz"
-echo ""
-echo -e "${BLUE}# 4. Configurar SSL (si no está configurado):${NC}"
-echo "sudo certbot --apache -d dashboard.baronti.cl"
-echo ""
-show_success "Archivos listos para deploy! 🎉"
-echo ""
-show_info "El dashboard estará disponible en: https://dashboard.baronti.cl"

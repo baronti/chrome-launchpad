@@ -15,9 +15,9 @@ PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Configuración del servidor (personaliza estos valores)
-SERVER_USER="usuario"  # Reemplaza con tu usuario del servidor
+SERVER_USER="wwbaro"  # Usuario del servidor
 DOMAIN="dashboard.baronti.cl"
-WEB_ROOT="/home/$SERVER_USER/public_html/$DOMAIN"
+WEB_ROOT="/home/$SERVER_USER/$DOMAIN"
 PROJECT_DIR="$(pwd)"
 BACKUP_DIR="/home/$SERVER_USER/backups"
 

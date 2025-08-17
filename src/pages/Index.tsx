@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Download, Upload, Settings, Globe, Wand2 } from 'lucide-react';
+import { Plus, Download, Upload, Settings, Globe, Wand2, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 import { useToast } from '@/hooks/use-toast';
 import SortableShortcutGrid from '@/components/SortableShortcutGrid';
@@ -17,6 +18,14 @@ interface Shortcut {
   url: string;
   icon?: string;
   order: number;
+}
+
+interface AgendaEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  createdAt: string;
 }
 
 interface AppData {
@@ -44,9 +53,30 @@ const Index = () => {
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAgendaDialogOpen, setIsAgendaDialogOpen] = useState(false);
   const [newShortcut, setNewShortcut] = useState({ name: '', url: '', icon: '' });
   const [newBackground, setNewBackground] = useState('');
+  const [agendaEvents, setAgendaEvents] = useState<AgendaEvent[]>([]);
+  const [newEvent, setNewEvent] = useState({ title: '', description: '', date: '' });
   const { toast } = useToast();
+
+  // Load agenda events from localStorage
+  useEffect(() => {
+    const savedEvents = localStorage.getItem('agenda-events');
+    if (savedEvents) {
+      try {
+        const parsed = JSON.parse(savedEvents);
+        setAgendaEvents(parsed);
+      } catch (error) {
+        console.error('Error parsing agenda events:', error);
+      }
+    }
+  }, []);
+
+  // Save agenda events to localStorage
+  useEffect(() => {
+    localStorage.setItem('agenda-events', JSON.stringify(agendaEvents));
+  }, [agendaEvents]);
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -435,6 +465,78 @@ const Index = () => {
     }));
   };
 
+  // Agenda functions
+  const sendToTelegram = async (event: AgendaEvent): Promise<boolean> => {
+    const apiUrl = `https://api.telegram.org/bot8362697237:AAEvPBT27oNL9Up8lJyce3Vy-vWIGubuM8E/sendMessage`;
+    const chatId = "5266936879";
+    
+    const message = `📅 NUEVA AGENDA
+Título: ${event.title}
+Descripción: ${event.description || 'Sin descripción'}
+Fecha: ${new Date(event.date).toLocaleString('es-ES')}
+Enviado desde: Dashboard Baronti`;
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+        }),
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Error sending to Telegram:', error);
+      return false;
+    }
+  };
+
+  const handleAddEvent = async () => {
+    if (!newEvent.title || !newEvent.date) {
+      toast({
+        title: "Error",
+        description: "El título y la fecha son requeridos",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const event: AgendaEvent = {
+      id: Date.now().toString(),
+      title: newEvent.title,
+      description: newEvent.description,
+      date: newEvent.date,
+      createdAt: new Date().toISOString()
+    };
+
+    // Save to localStorage
+    setAgendaEvents(prev => [...prev, event]);
+
+    // Send to Telegram
+    const telegramSent = await sendToTelegram(event);
+
+    if (telegramSent) {
+      toast({
+        title: "Evento agregado",
+        description: "El evento ha sido guardado y enviado a Telegram"
+      });
+    } else {
+      toast({
+        title: "Evento guardado",
+        description: "El evento ha sido guardado pero no se pudo enviar a Telegram",
+        variant: "destructive"
+      });
+    }
+
+    // Clean form and close dialog
+    setNewEvent({ title: '', description: '', date: '' });
+    setIsAgendaDialogOpen(false);
+  };
+
   // Sort items by order for display
   const getSortedItems = (items: Shortcut[]) => {
     return [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -465,6 +567,59 @@ const Index = () => {
               <Download className="w-4 h-4 mr-2" />
               Exportar
             </Button>
+            
+            <Dialog open={isAgendaDialogOpen} onOpenChange={setIsAgendaDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Agenda
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-gray-900 border-gray-700">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Agregar Evento a la Agenda</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="event-title" className="text-white">Título del evento *</Label>
+                    <Input
+                      id="event-title"
+                      value={newEvent.title}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Reunión, cita médica, etc."
+                      className="bg-gray-800 border-gray-600 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="event-description" className="text-white">Descripción (opcional)</Label>
+                    <Textarea
+                      id="event-description"
+                      value={newEvent.description}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Detalles adicionales del evento..."
+                      className="bg-gray-800 border-gray-600 text-white"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="event-date" className="text-white">Fecha y hora *</Label>
+                    <Input
+                      id="event-date"
+                      type="datetime-local"
+                      value={newEvent.date}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                      className="bg-gray-800 border-gray-600 text-white"
+                    />
+                  </div>
+                  <Button onClick={handleAddEvent} className="w-full">
+                    Enviar a Telegram y Guardar
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
             
             <label className="cursor-pointer">
               <input

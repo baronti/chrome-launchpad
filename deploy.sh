@@ -17,8 +17,8 @@ NC='\033[0m' # No Color
 # Configuración del servidor (personaliza estos valores)
 SERVER_USER="wwbaro"  # Usuario del servidor
 DOMAIN="dashboard.baronti.cl"
-WEB_ROOT="/home/$SERVER_USER/$DOMAIN"
-PROJECT_DIR="$(pwd)"
+PROJECT_DIR="/home/$SERVER_USER/$DOMAIN/dashboard-code"  # Directorio del código fuente
+WEB_ROOT="/home/$SERVER_USER/$DOMAIN"  # Directorio público del sitio
 BACKUP_DIR="/home/$SERVER_USER/backups"
 
 # Función para mostrar errores y salir
@@ -49,11 +49,13 @@ show_process() {
 
 # Función para crear backup
 create_backup() {
-    if [ -d "$WEB_ROOT" ]; then
+    if [ -d "$WEB_ROOT" ] && [ "$(ls -A $WEB_ROOT 2>/dev/null | grep -v dashboard-code)" ]; then
         show_info "Creando backup del sitio actual..."
         mkdir -p "$BACKUP_DIR"
         BACKUP_NAME="dashboard-backup-$(date +%Y%m%d-%H%M%S)"
-        cp -r "$WEB_ROOT" "$BACKUP_DIR/$BACKUP_NAME" || show_error "Fallo al crear backup"
+        # Solo hacer backup de los archivos web, no del código fuente
+        mkdir -p "$BACKUP_DIR/$BACKUP_NAME"
+        find "$WEB_ROOT" -maxdepth 1 -type f -exec cp {} "$BACKUP_DIR/$BACKUP_NAME"/ \; 2>/dev/null || true
         show_success "Backup creado: $BACKUP_DIR/$BACKUP_NAME"
         echo "$BACKUP_DIR/$BACKUP_NAME" > /tmp/last_backup_path
     else
@@ -74,14 +76,24 @@ rollback() {
     fi
 }
 
+# Mostrar información de debug
+show_info "Directorio actual: $(pwd)"
+show_info "Directorio del proyecto: $PROJECT_DIR"
+show_info "Directorio web: $WEB_ROOT"
+
+# Cambiar al directorio del proyecto
+show_process "Cambiando al directorio del proyecto..."
+cd "$PROJECT_DIR" || show_error "No se pudo acceder al directorio del proyecto: $PROJECT_DIR"
+show_success "Directorio cambiado a: $(pwd)"
+
 # Verificar que estamos en un repositorio git
 if [ ! -d ".git" ]; then
-    show_error "No se encontró repositorio git. Ejecuta este script desde el directorio del proyecto clonado."
+    show_error "No se encontró repositorio git en: $PROJECT_DIR"
 fi
 
 # Verificar que existe package.json
 if [ ! -f "package.json" ]; then
-    show_error "No se encontró package.json. Asegúrate de estar en el directorio raíz del proyecto."
+    show_error "No se encontró package.json en: $PROJECT_DIR"
 fi
 
 # Paso 1: Actualizar código desde repositorio
@@ -126,11 +138,19 @@ show_success "Directorio web preparado"
 
 # Paso 7: Desplegar archivos
 show_process "Paso 7: Desplegando archivos al servidor web..."
-# Limpiar directorio web actual
-sudo rm -rf "$WEB_ROOT"/* || show_error "Fallo al limpiar directorio web"
 
-# Copiar nuevos archivos
-sudo cp -r dist/* "$WEB_ROOT"/ || {
+# Mostrar información de debug antes de copiar
+show_info "Contenido actual de dist:"
+ls -la "$PROJECT_DIR/dist/" || show_error "No se pudo listar el contenido de dist"
+
+# Limpiar directorio web actual (preservar dashboard-code)
+show_info "Limpiando archivos web anteriores..."
+find "$WEB_ROOT" -maxdepth 1 -type f -delete 2>/dev/null || true
+find "$WEB_ROOT" -maxdepth 1 -type d -name "assets" -exec rm -rf {} \; 2>/dev/null || true
+
+# Copiar nuevos archivos desde el directorio del proyecto
+show_info "Copiando desde: $PROJECT_DIR/dist/* hacia: $WEB_ROOT/"
+sudo cp -r "$PROJECT_DIR/dist"/* "$WEB_ROOT"/ || {
     show_error "Fallo al copiar archivos. Ejecutando rollback..."
     rollback
     show_error "Deploy fallido, sitio restaurado"

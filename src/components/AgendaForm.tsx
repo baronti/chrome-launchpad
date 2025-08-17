@@ -18,11 +18,32 @@ interface AgendaFormProps {
   isOpen: boolean;
   onClose: () => void;
   onEventAdded: (event: AgendaEvent) => void;
+  editingEvent?: AgendaEvent | null;
+  onEventUpdated?: (event: AgendaEvent) => void;
 }
 
-const AgendaForm: React.FC<AgendaFormProps> = ({ isOpen, onClose, onEventAdded }) => {
+const AgendaForm: React.FC<AgendaFormProps> = ({ 
+  isOpen, 
+  onClose, 
+  onEventAdded, 
+  editingEvent = null, 
+  onEventUpdated 
+}) => {
   const [newEvent, setNewEvent] = useState({ title: '', description: '', date: '' });
   const { toast } = useToast();
+
+  // Load event data when editing
+  React.useEffect(() => {
+    if (editingEvent) {
+      setNewEvent({
+        title: editingEvent.title,
+        description: editingEvent.description,
+        date: editingEvent.date
+      });
+    } else {
+      setNewEvent({ title: '', description: '', date: '' });
+    }
+  }, [editingEvent]);
 
   const sendToTelegram = async (event: AgendaEvent): Promise<boolean> => {
     const apiUrl = `https://api.telegram.org/bot8362697237:AAEvPBT27oNL9Up8lJyce3Vy-vWIGubuM8E/sendMessage`;
@@ -53,7 +74,7 @@ Enviado desde: Dashboard Baronti`;
     }
   };
 
-  const handleAddEvent = async () => {
+  const handleSaveEvent = async () => {
     if (!newEvent.title || !newEvent.date) {
       toast({
         title: "Error",
@@ -63,39 +84,68 @@ Enviado desde: Dashboard Baronti`;
       return;
     }
 
-    const event: AgendaEvent = {
-      id: Date.now().toString(),
-      title: newEvent.title,
-      description: newEvent.description,
-      date: newEvent.date,
-      createdAt: new Date().toISOString()
-    };
+    if (editingEvent) {
+      // Update existing event
+      const updatedEvent: AgendaEvent = {
+        ...editingEvent,
+        title: newEvent.title,
+        description: newEvent.description,
+        date: newEvent.date
+      };
 
-    // Save to localStorage
-    const savedEvents = localStorage.getItem('agenda-events');
-    const currentEvents = savedEvents ? JSON.parse(savedEvents) : [];
-    const updatedEvents = [...currentEvents, event];
-    localStorage.setItem('agenda-events', JSON.stringify(updatedEvents));
+      // Update in localStorage
+      const savedEvents = localStorage.getItem('agenda-events');
+      const currentEvents = savedEvents ? JSON.parse(savedEvents) : [];
+      const eventIndex = currentEvents.findIndex((e: AgendaEvent) => e.id === editingEvent.id);
+      if (eventIndex !== -1) {
+        currentEvents[eventIndex] = updatedEvent;
+        localStorage.setItem('agenda-events', JSON.stringify(currentEvents));
+      }
 
-    // Send to Telegram
-    const telegramSent = await sendToTelegram(event);
-
-    if (telegramSent) {
       toast({
-        title: "Evento agregado",
-        description: "El evento ha sido guardado y enviado a Telegram"
+        title: "Evento actualizado",
+        description: "El evento ha sido modificado correctamente"
       });
+
+      // Clean form and notify parent
+      setNewEvent({ title: '', description: '', date: '' });
+      onEventUpdated?.(updatedEvent);
     } else {
-      toast({
-        title: "Evento guardado",
-        description: "El evento ha sido guardado pero no se pudo enviar a Telegram",
-        variant: "destructive"
-      });
-    }
+      // Create new event
+      const event: AgendaEvent = {
+        id: Date.now().toString(),
+        title: newEvent.title,
+        description: newEvent.description,
+        date: newEvent.date,
+        createdAt: new Date().toISOString()
+      };
 
-    // Clean form and notify parent
-    setNewEvent({ title: '', description: '', date: '' });
-    onEventAdded(event);
+      // Save to localStorage
+      const savedEvents = localStorage.getItem('agenda-events');
+      const currentEvents = savedEvents ? JSON.parse(savedEvents) : [];
+      const updatedEvents = [...currentEvents, event];
+      localStorage.setItem('agenda-events', JSON.stringify(updatedEvents));
+
+      // Send to Telegram
+      const telegramSent = await sendToTelegram(event);
+
+      if (telegramSent) {
+        toast({
+          title: "Evento agregado",
+          description: "El evento ha sido guardado y enviado a Telegram"
+        });
+      } else {
+        toast({
+          title: "Evento guardado",
+          description: "El evento ha sido guardado pero no se pudo enviar a Telegram",
+          variant: "destructive"
+        });
+      }
+
+      // Clean form and notify parent
+      setNewEvent({ title: '', description: '', date: '' });
+      onEventAdded(event);
+    }
   };
 
   const handleClose = () => {
@@ -107,7 +157,9 @@ Enviado desde: Dashboard Baronti`;
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="bg-gray-900 border-gray-700">
         <DialogHeader>
-          <DialogTitle className="text-white">Agregar Evento a la Agenda</DialogTitle>
+          <DialogTitle className="text-white">
+            {editingEvent ? 'Editar Evento' : 'Agregar Evento a la Agenda'}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
@@ -141,8 +193,8 @@ Enviado desde: Dashboard Baronti`;
               className="bg-gray-800 border-gray-600 text-white"
             />
           </div>
-          <Button onClick={handleAddEvent} className="w-full">
-            Enviar a Telegram y Guardar
+          <Button onClick={handleSaveEvent} className="w-full">
+            {editingEvent ? 'Actualizar Evento' : 'Enviar a Telegram y Guardar'}
           </Button>
         </div>
       </DialogContent>

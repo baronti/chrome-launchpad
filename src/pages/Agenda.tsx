@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Calendar, Clock, Edit2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import AgendaForm from '@/components/AgendaForm';
 
 interface AgendaEvent {
@@ -16,7 +17,9 @@ const Agenda = () => {
   const [agendaEvents, setAgendaEvents] = useState<AgendaEvent[]>([]);
   const [backgroundImage, setBackgroundImage] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<AgendaEvent | null>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Load events and background from localStorage
   useEffect(() => {
@@ -50,6 +53,45 @@ const Agenda = () => {
   const handleEventAdded = (newEvent: AgendaEvent) => {
     setAgendaEvents(prev => [...prev, newEvent]);
     setIsFormOpen(false);
+    setEditingEvent(null);
+  };
+
+  const handleEventUpdated = (updatedEvent: AgendaEvent) => {
+    setAgendaEvents(prev => 
+      prev.map(event => 
+        event.id === updatedEvent.id ? updatedEvent : event
+      )
+    );
+    setIsFormOpen(false);
+    setEditingEvent(null);
+  };
+
+  const handleEditEvent = (event: AgendaEvent) => {
+    setEditingEvent(event);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteEvent = (eventId: string) => {
+    // Remove from state
+    setAgendaEvents(prev => prev.filter(event => event.id !== eventId));
+    
+    // Remove from localStorage
+    const savedEvents = localStorage.getItem('agenda-events');
+    if (savedEvents) {
+      const currentEvents = JSON.parse(savedEvents);
+      const filteredEvents = currentEvents.filter((event: AgendaEvent) => event.id !== eventId);
+      localStorage.setItem('agenda-events', JSON.stringify(filteredEvents));
+    }
+
+    toast({
+      title: "Evento eliminado",
+      description: "El evento ha sido eliminado correctamente"
+    });
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setEditingEvent(null);
   };
 
   const isEventPast = (eventDate: string) => {
@@ -139,11 +181,31 @@ const Agenda = () => {
                     <h3 className="text-lg font-semibold text-white leading-tight">
                       {event.title}
                     </h3>
-                    {isPast && (
-                      <span className="text-xs bg-white/20 text-white px-2 py-1 rounded">
-                        Pasado
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {isPast && (
+                        <span className="text-xs bg-white/20 text-white px-2 py-1 rounded">
+                          Pasado
+                        </span>
+                      )}
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditEvent(event)}
+                          className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/20"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteEvent(event.id)}
+                          className="h-8 w-8 p-0 text-white/70 hover:text-red-400 hover:bg-red-500/20"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                   
                   {event.description && (
@@ -173,8 +235,10 @@ const Agenda = () => {
       {isFormOpen && (
         <AgendaForm
           isOpen={isFormOpen}
-          onClose={() => setIsFormOpen(false)}
+          onClose={handleFormClose}
           onEventAdded={handleEventAdded}
+          editingEvent={editingEvent}
+          onEventUpdated={handleEventUpdated}
         />
       )}
     </div>

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import AgendaForm from '@/components/AgendaForm';
+import { getEventsOrderedByProximity, isEventPast } from '@/utils/eventUtils';
 
 interface AgendaEvent {
   id: string;
@@ -43,12 +44,8 @@ const Agenda = () => {
     }
   }, []);
 
-  // Sort events chronologically (upcoming first)
-  const sortedEvents = [...agendaEvents].sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
-    return dateA.getTime() - dateB.getTime();
-  });
+  // Sort events by proximity (future events first, then past events)
+  const sortedEvents = getEventsOrderedByProximity(agendaEvents);
 
   const handleEventAdded = (newEvent: AgendaEvent) => {
     setAgendaEvents(prev => [...prev, newEvent]);
@@ -94,9 +91,6 @@ const Agenda = () => {
     setEditingEvent(null);
   };
 
-  const isEventPast = (eventDate: string) => {
-    return new Date(eventDate) < new Date();
-  };
 
   const formatEventDate = (dateString: string) => {
     const date = new Date(dateString);

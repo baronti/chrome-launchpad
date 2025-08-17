@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { getFutureEvents, isEventToday, isEventTomorrow } from '@/utils/eventUtils';
 
 interface AgendaEvent {
   id: string;
@@ -22,14 +23,8 @@ const UpcomingEvents: React.FC = () => {
         try {
           const parsedEvents = JSON.parse(savedEvents);
           
-          // Filter future events and sort chronologically
-          const now = new Date();
-          const futureEvents = parsedEvents
-            .filter((event: AgendaEvent) => new Date(event.date) >= now)
-            .sort((a: AgendaEvent, b: AgendaEvent) => 
-              new Date(a.date).getTime() - new Date(b.date).getTime()
-            )
-            .slice(0, 5); // Show only next 5 events
+          // Get only future events (next 5) using utility function
+          const futureEvents = getFutureEvents(parsedEvents, 5);
           
           setEvents(futureEvents);
         } catch (error) {
@@ -82,18 +77,6 @@ const UpcomingEvents: React.FC = () => {
     }
   };
 
-  const isToday = (dateString: string) => {
-    const eventDate = new Date(dateString);
-    const today = new Date();
-    return eventDate.toDateString() === today.toDateString();
-  };
-
-  const isTomorrow = (dateString: string) => {
-    const eventDate = new Date(dateString);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return eventDate.toDateString() === tomorrow.toDateString();
-  };
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 h-fit">
@@ -123,9 +106,9 @@ const UpcomingEvents: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className={`text-xs px-2 py-1 rounded-full ${
-                    isToday(event.date) 
+                    isEventToday(event.date) 
                       ? 'bg-red-500/20 text-red-300' 
-                      : isTomorrow(event.date)
+                      : isEventTomorrow(event.date)
                         ? 'bg-yellow-500/20 text-yellow-300'
                         : 'bg-blue-500/20 text-blue-300'
                   }`}>

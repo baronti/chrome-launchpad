@@ -471,21 +471,21 @@ const Index = () => {
           
           <div className="flex gap-4">
             <Button 
+              variant="outline" 
+              onClick={() => navigate('/agenda')}
+              className="bg-blue-500/20 backdrop-blur-md border-blue-300/30 text-white hover:bg-blue-500/30 transition-all duration-300"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Agenda
+            </Button>
+
+            <Button 
               onClick={exportData}
               variant="outline" 
               className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
             >
               <Download className="w-4 h-4 mr-2" />
               Exportar
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/agenda')}
-              className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
-            >
-              <Calendar className="w-4 h-4 mr-2" />
-              Agenda
             </Button>
             
             <label className="cursor-pointer">

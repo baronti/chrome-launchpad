@@ -3,6 +3,13 @@ import { Calendar, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { getFutureEvents, isEventToday, isEventTomorrow } from '@/utils/eventUtils';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 
 interface AgendaEvent {
   id: string;
@@ -23,8 +30,8 @@ const UpcomingEvents: React.FC = () => {
         try {
           const parsedEvents = JSON.parse(savedEvents);
           
-          // Get only future events (next 5) using utility function
-          const futureEvents = getFutureEvents(parsedEvents, 5);
+          // Get future events for carousel pagination
+          const futureEvents = getFutureEvents(parsedEvents, 20);
           
           setEvents(futureEvents);
         } catch (error) {
@@ -78,6 +85,17 @@ const UpcomingEvents: React.FC = () => {
   };
 
 
+  // Group events into chunks of 4
+  const groupEventsInChunks = (events: AgendaEvent[], chunkSize: number) => {
+    const chunks = [];
+    for (let i = 0; i < events.length; i += chunkSize) {
+      chunks.push(events.slice(i, i + chunkSize));
+    }
+    return chunks;
+  };
+
+  const eventChunks = groupEventsInChunks(events, 4);
+
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 h-fit">
       <div className="flex items-center justify-between mb-4">
@@ -95,32 +113,48 @@ const UpcomingEvents: React.FC = () => {
         </Button>
       </div>
       
-      <div className="space-y-3">
+      <div className="relative">
         {events.length > 0 ? (
-          events.map((event) => (
-            <div 
-              key={event.id}
-              className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
-              onClick={() => navigate('/agenda')}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    isEventToday(event.date) 
-                      ? 'bg-red-500/20 text-red-300' 
-                      : isEventTomorrow(event.date)
-                        ? 'bg-yellow-500/20 text-yellow-300'
-                        : 'bg-blue-500/20 text-blue-300'
-                  }`}>
-                    {formatEventDate(event.date)}
-                  </span>
-                </div>
-                <p className="text-white font-medium mt-1 truncate group-hover:text-white/90">
-                  {event.title}
-                </p>
-              </div>
-            </div>
-          ))
+          <Carousel className="w-full">
+            <CarouselContent>
+              {eventChunks.map((chunk, chunkIndex) => (
+                <CarouselItem key={chunkIndex}>
+                  <div className="space-y-3">
+                    {chunk.map((event) => (
+                      <div 
+                        key={event.id}
+                        className="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer group"
+                        onClick={() => navigate('/agenda')}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              isEventToday(event.date) 
+                                ? 'bg-red-500/20 text-red-300' 
+                                : isEventTomorrow(event.date)
+                                  ? 'bg-yellow-500/20 text-yellow-300'
+                                  : 'bg-blue-500/20 text-blue-300'
+                            }`}>
+                              {formatEventDate(event.date)}
+                            </span>
+                          </div>
+                          <p className="text-white font-medium mt-1 truncate group-hover:text-white/90">
+                            {event.title}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {eventChunks.length > 1 && (
+              <>
+                <CarouselPrevious className="absolute -left-3 top-1/2 -translate-y-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white" />
+                <CarouselNext className="absolute -right-3 top-1/2 -translate-y-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white" />
+              </>
+            )}
+          </Carousel>
         ) : (
           <div className="text-center py-6">
             <Calendar className="w-8 h-8 text-white/30 mx-auto mb-2" />

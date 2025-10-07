@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Download, Upload, Settings, Globe, Wand2, Calendar } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import React, { useState, useEffect } from "react";
+import { Plus, Download, Upload, Settings, Globe, Wand2, Calendar } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
-import { useToast } from '@/hooks/use-toast';
-import SortableShortcutGrid from '@/components/SortableShortcutGrid';
-import { getAutomaticIcon } from '@/utils/iconUtils';
-import TabManager, { TabData } from '@/components/TabManager';
-import NotesSection from '@/components/NotesSection';
-import UpcomingEvents from '@/components/UpcomingEvents';
+import { useToast } from "@/hooks/use-toast";
+import SortableShortcutGrid from "@/components/SortableShortcutGrid";
+import { getAutomaticIcon } from "@/utils/iconUtils";
+import TabManager, { TabData } from "@/components/TabManager";
+import NotesSection from "@/components/NotesSection";
+import UpcomingEvents from "@/components/UpcomingEvents";
 
 interface Shortcut {
   id: string;
@@ -36,93 +36,96 @@ interface AppData {
   backgroundImage: string;
 }
 
-const DEFAULT_BACKGROUND = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80';
+const DEFAULT_BACKGROUND =
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
 
 const Index = () => {
   const defaultTab: TabData = {
-    id: 'default',
-    name: 'Sitios Web',
-    color: '',
+    id: "default",
+    name: "Sitios Web",
+    color: "",
     order: 0,
     websites: [],
-    notes: ''
+    notes: "",
   };
 
   const [appData, setAppData] = useState<AppData>({
     tabs: [defaultTab],
-    activeTabId: 'default',
-    backgroundImage: DEFAULT_BACKGROUND
+    activeTabId: "default",
+    backgroundImage: DEFAULT_BACKGROUND,
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [newShortcut, setNewShortcut] = useState({ name: '', url: '', icon: '' });
-  const [newBackground, setNewBackground] = useState('');
+  const [newShortcut, setNewShortcut] = useState({ name: "", url: "", icon: "" });
+  const [newBackground, setNewBackground] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
-
   // Load data from localStorage on component mount
   useEffect(() => {
-    const savedData = localStorage.getItem('dashboard-data');
+    const savedData = localStorage.getItem("dashboard-data");
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
-        
+
         // Migrate old data format to new tab-based format
         if (parsed.websites && !parsed.tabs) {
-          const migrateShortcuts = (shortcuts: Shortcut[]) => 
+          const migrateShortcuts = (shortcuts: Shortcut[]) =>
             shortcuts.map((shortcut, index) => ({
               ...shortcut,
-              order: shortcut.order ?? index
+              order: shortcut.order ?? index,
             }));
 
           const migratedData = {
-            tabs: [{
-              id: 'default',
-              name: 'Sitios Web',
-              color: '',
-              order: 0,
-              websites: migrateShortcuts(parsed.websites || []),
-              notes: ''
-            }],
-            activeTabId: 'default',
-            backgroundImage: parsed.backgroundImage || DEFAULT_BACKGROUND
+            tabs: [
+              {
+                id: "default",
+                name: "Sitios Web",
+                color: "",
+                order: 0,
+                websites: migrateShortcuts(parsed.websites || []),
+                notes: "",
+              },
+            ],
+            activeTabId: "default",
+            backgroundImage: parsed.backgroundImage || DEFAULT_BACKGROUND,
           };
-          
+
           setAppData(migratedData);
         } else {
           // Ensure all tabs have migrated shortcuts and required properties
           const migratedTabs = parsed.tabs?.map((tab: TabData, index: number) => ({
             ...tab,
-            color: tab.color || '',
+            color: tab.color || "",
             order: tab.order ?? index,
-            notes: tab.notes || '', // Asegurar que las notas estén inicializadas
-            websites: tab.websites?.map((shortcut, index) => ({
-              ...shortcut,
-              order: shortcut.order ?? index
-            })) || []
+            notes: tab.notes || "", // Asegurar que las notas estén inicializadas
+            websites:
+              tab.websites?.map((shortcut, index) => ({
+                ...shortcut,
+                order: shortcut.order ?? index,
+              })) || [],
           })) || [defaultTab];
 
           setAppData({
             ...parsed,
-            tabs: migratedTabs
+            tabs: migratedTabs,
           });
         }
-        
+
         setNewBackground(parsed.backgroundImage || DEFAULT_BACKGROUND);
       } catch (error) {
-        console.error('Error parsing saved data:', error);
+        console.error("Error parsing saved data:", error);
       }
     }
   }, []);
 
   // Save data to localStorage whenever appData changes
   useEffect(() => {
-    localStorage.setItem('dashboard-data', JSON.stringify(appData));
+    localStorage.setItem("dashboard-data", JSON.stringify(appData));
   }, [appData]);
 
   const getCurrentTab = () => {
-    return appData.tabs.find(tab => tab.id === appData.activeTabId) || appData.tabs[0];
+    return appData.tabs.find((tab) => tab.id === appData.activeTabId) || appData.tabs[0];
   };
 
   const addShortcut = () => {
@@ -130,7 +133,7 @@ const Index = () => {
       toast({
         title: "Error",
         description: "El nombre y la URL son requeridos",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -143,24 +146,22 @@ const Index = () => {
       name: newShortcut.name,
       url: newShortcut.url,
       icon: newShortcut.icon,
-      order: nextOrder
+      order: nextOrder,
     };
 
-    setAppData(prev => ({
+    setAppData((prev) => ({
       ...prev,
-      tabs: prev.tabs.map(tab =>
-        tab.id === prev.activeTabId
-          ? { ...tab, websites: [...tab.websites, shortcut] }
-          : tab
-      )
+      tabs: prev.tabs.map((tab) =>
+        tab.id === prev.activeTabId ? { ...tab, websites: [...tab.websites, shortcut] } : tab,
+      ),
     }));
 
-    setNewShortcut({ name: '', url: '', icon: '' });
+    setNewShortcut({ name: "", url: "", icon: "" });
     setIsAddDialogOpen(false);
-    
+
     toast({
       title: "Acceso directo agregado",
-      description: `${shortcut.name} ha sido agregado a ${currentTab.name}`
+      description: `${shortcut.name} ha sido agregado a ${currentTab.name}`,
     });
   };
 
@@ -169,78 +170,70 @@ const Index = () => {
       toast({
         title: "Error",
         description: "Ingresa una URL primero",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    const detectedIcon = getAutomaticIcon(newShortcut.url, 'websites');
-    setNewShortcut(prev => ({ ...prev, icon: detectedIcon }));
-    
+    const detectedIcon = getAutomaticIcon(newShortcut.url, "websites");
+    setNewShortcut((prev) => ({ ...prev, icon: detectedIcon }));
+
     toast({
       title: "Icono detectado",
-      description: "El icono ha sido detectado automáticamente"
+      description: "El icono ha sido detectado automáticamente",
     });
   };
 
   const handleReorder = (reorderedItems: Shortcut[]) => {
-    setAppData(prev => ({
+    setAppData((prev) => ({
       ...prev,
-      tabs: prev.tabs.map(tab =>
-        tab.id === prev.activeTabId
-          ? { ...tab, websites: reorderedItems }
-          : tab
-      )
+      tabs: prev.tabs.map((tab) => (tab.id === prev.activeTabId ? { ...tab, websites: reorderedItems } : tab)),
     }));
   };
 
   const removeShortcut = (id: string) => {
-    setAppData(prev => ({
+    setAppData((prev) => ({
       ...prev,
-      tabs: prev.tabs.map(tab =>
-        tab.id === prev.activeTabId
-          ? { ...tab, websites: tab.websites.filter(item => item.id !== id) }
-          : tab
-      )
+      tabs: prev.tabs.map((tab) =>
+        tab.id === prev.activeTabId ? { ...tab, websites: tab.websites.filter((item) => item.id !== id) } : tab,
+      ),
     }));
-    
+
     toast({
       title: "Acceso directo eliminado",
-      description: "El acceso directo ha sido eliminado"
+      description: "El acceso directo ha sido eliminado",
     });
   };
 
   const editShortcut = (id: string, newName: string) => {
-    setAppData(prev => ({
+    setAppData((prev) => ({
       ...prev,
-      tabs: prev.tabs.map(tab =>
+      tabs: prev.tabs.map((tab) =>
         tab.id === prev.activeTabId
-          ? { 
-              ...tab, 
-              websites: tab.websites.map(item => 
-                item.id === id ? { ...item, name: newName } : item
-              ) 
+          ? {
+              ...tab,
+              websites: tab.websites.map((item) => (item.id === id ? { ...item, name: newName } : item)),
             }
-          : tab
-      )
+          : tab,
+      ),
     }));
-    
+
     toast({
       title: "Acceso directo actualizado",
-      description: "El nombre ha sido actualizado correctamente"
+      description: "El nombre ha sido actualizado correctamente",
     });
   };
 
   const updateBackground = () => {
-    setAppData(prev => ({
+    setAppData((prev) => ({
       ...prev,
-      backgroundImage: newBackground
+      backgroundImage: newBackground,
     }));
     setIsSettingsOpen(false);
-    
+
     toast({
       title: "Fondo actualizado",
-      description: "El fondo de pantalla ha sido cambiado"
+      description: "El fondo de pantalla ha sido cambiado",
     });
   };
 
@@ -248,11 +241,11 @@ const Index = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       toast({
         title: "Error",
         description: "Por favor selecciona un archivo de imagen válido",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -261,18 +254,18 @@ const Index = () => {
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       setNewBackground(dataUrl);
-      setAppData(prev => ({
+      setAppData((prev) => ({
         ...prev,
-        backgroundImage: dataUrl
+        backgroundImage: dataUrl,
       }));
-      
+
       toast({
         title: "Fondo actualizado",
-        description: "El archivo local ha sido cargado como fondo"
+        description: "El archivo local ha sido cargado como fondo",
       });
     };
     reader.readAsDataURL(file);
-    event.target.value = '';
+    event.target.value = "";
   };
 
   const exportData = () => {
@@ -281,29 +274,29 @@ const Index = () => {
       ...appData,
       tabs: appData.tabs.map((tab, index) => ({
         ...tab,
-        color: tab.color || '',
+        color: tab.color || "",
         order: tab.order ?? index,
         websites: tab.websites.map((website, idx) => ({
           ...website,
-          order: website.order ?? idx
-        }))
-      }))
+          order: website.order ?? idx,
+        })),
+      })),
     };
-    
+
     const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = 'dashboard-config.json';
+    link.download = "dashboard-config.json";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
+
     toast({
       title: "Datos exportados",
-      description: "La configuración ha sido descargada"
+      description: "La configuración ha sido descargada",
     });
   };
 
@@ -315,139 +308,134 @@ const Index = () => {
     reader.onload = (e) => {
       try {
         const importedData = JSON.parse(e.target?.result as string);
-        
+
         // Migrar y validar datos importados
         let processedData;
-        
+
         if (importedData.websites && !importedData.tabs) {
           // Migrar formato antiguo a nuevo formato con pestañas
-          const migrateShortcuts = (shortcuts: Shortcut[]) => 
+          const migrateShortcuts = (shortcuts: Shortcut[]) =>
             shortcuts.map((shortcut, index) => ({
               ...shortcut,
-              order: shortcut.order ?? index
+              order: shortcut.order ?? index,
             }));
 
           processedData = {
-            tabs: [{
-              id: 'default',
-              name: 'Sitios Web',
-              color: '',
-              order: 0,
-              websites: migrateShortcuts(importedData.websites || []),
-              notes: ''
-            }],
-            activeTabId: 'default',
-            backgroundImage: importedData.backgroundImage || DEFAULT_BACKGROUND
+            tabs: [
+              {
+                id: "default",
+                name: "Sitios Web",
+                color: "",
+                order: 0,
+                websites: migrateShortcuts(importedData.websites || []),
+                notes: "",
+              },
+            ],
+            activeTabId: "default",
+            backgroundImage: importedData.backgroundImage || DEFAULT_BACKGROUND,
           };
         } else {
           // Asegurar que todos los tabs tengan las propiedades requeridas
           const migratedTabs = importedData.tabs?.map((tab: any, index: number) => ({
             id: tab.id || Date.now().toString(),
             name: tab.name || `Pestaña ${index + 1}`,
-            color: tab.color || '',
+            color: tab.color || "",
             order: tab.order ?? index,
             websites: (tab.websites || []).map((website: any, idx: number) => ({
               id: website.id || Date.now().toString(),
-              name: website.name || 'Sin nombre',
-              url: website.url || '',
-              icon: website.icon || '',
-              order: website.order ?? idx
+              name: website.name || "Sin nombre",
+              url: website.url || "",
+              icon: website.icon || "",
+              order: website.order ?? idx,
             })),
-            notes: tab.notes || ''
+            notes: tab.notes || "",
           })) || [defaultTab];
 
           processedData = {
             tabs: migratedTabs,
-            activeTabId: importedData.activeTabId || migratedTabs[0]?.id || 'default',
-            backgroundImage: importedData.backgroundImage || DEFAULT_BACKGROUND
+            activeTabId: importedData.activeTabId || migratedTabs[0]?.id || "default",
+            backgroundImage: importedData.backgroundImage || DEFAULT_BACKGROUND,
           };
         }
-        
+
         setAppData(processedData);
         setNewBackground(processedData.backgroundImage);
-        
+
         toast({
           title: "Datos importados",
-          description: "La configuración ha sido cargada exitosamente"
+          description: "La configuración ha sido cargada exitosamente",
         });
       } catch (error) {
         toast({
           title: "Error",
           description: "El archivo no tiene un formato válido",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     };
     reader.readAsText(file);
-    event.target.value = '';
+    event.target.value = "";
   };
 
   const openShortcut = (url: string) => {
-    window.open(url.startsWith('http') ? url : `https://${url}`, '_blank');
+    window.open(url.startsWith("http") ? url : `https://${url}`, "_blank");
   };
 
   // Tab management functions
   const handleTabSelect = (tabId: string) => {
-    setAppData(prev => ({ ...prev, activeTabId: tabId }));
+    setAppData((prev) => ({ ...prev, activeTabId: tabId }));
   };
 
   const handleTabCreate = (name: string, color?: string) => {
     const newTab: TabData = {
       id: Date.now().toString(),
       name,
-      color: color || '',
+      color: color || "",
       order: appData.tabs.length,
       websites: [],
-      notes: ''
+      notes: "",
     };
-    
-    setAppData(prev => ({
+
+    setAppData((prev) => ({
       ...prev,
       tabs: [...prev.tabs, newTab],
-      activeTabId: newTab.id
+      activeTabId: newTab.id,
     }));
   };
 
   const handleTabUpdate = (tabId: string, name: string, color?: string) => {
-    setAppData(prev => ({
+    setAppData((prev) => ({
       ...prev,
-      tabs: prev.tabs.map(tab =>
-        tab.id === tabId ? { ...tab, name, color: color || tab.color } : tab
-      )
+      tabs: prev.tabs.map((tab) => (tab.id === tabId ? { ...tab, name, color: color || tab.color } : tab)),
     }));
   };
 
   const handleTabDelete = (tabId: string) => {
-    setAppData(prev => {
-      const newTabs = prev.tabs.filter(tab => tab.id !== tabId);
+    setAppData((prev) => {
+      const newTabs = prev.tabs.filter((tab) => tab.id !== tabId);
       const newActiveTabId = prev.activeTabId === tabId ? newTabs[0]?.id : prev.activeTabId;
-      
+
       return {
         ...prev,
         tabs: newTabs,
-        activeTabId: newActiveTabId
+        activeTabId: newActiveTabId,
       };
     });
   };
 
   const handleTabReorder = (reorderedTabs: TabData[]) => {
-    setAppData(prev => ({
+    setAppData((prev) => ({
       ...prev,
-      tabs: reorderedTabs
+      tabs: reorderedTabs,
     }));
   };
 
   const handleNotesUpdate = (notes: string) => {
-    setAppData(prev => ({
+    setAppData((prev) => ({
       ...prev,
-      tabs: prev.tabs.map(tab =>
-        tab.id === prev.activeTabId
-          ? { ...tab, notes }
-          : tab
-      )
+      tabs: prev.tabs.map((tab) => (tab.id === prev.activeTabId ? { ...tab, notes } : tab)),
     }));
   };
-
 
   // Sort items by order for display
   const getSortedItems = (items: Shortcut[]) => {
@@ -457,47 +445,42 @@ const Index = () => {
   const currentTab = getCurrentTab();
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: `url(${appData.backgroundImage})` }}
     >
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/40" />
-      
+
       {/* Content */}
       <div className="relative z-10 p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-white"> Baronti Dashboard</h1>
-          
+          <h1 className="text-4xl font-bold text-white"> Personal Dashboard</h1>
+
           <div className="flex gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/agenda')}
+            <Button
+              variant="outline"
+              onClick={() => navigate("/agenda")}
               className="bg-blue-500/20 backdrop-blur-md border-blue-300/30 text-white hover:bg-blue-500/30 transition-all duration-300"
             >
               <Calendar className="w-4 h-4 mr-2" />
               Agenda
             </Button>
 
-            <Button 
+            <Button
               onClick={exportData}
-              variant="outline" 
+              variant="outline"
               className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
             >
               <Download className="w-4 h-4 mr-2" />
               Exportar
             </Button>
-            
+
             <label className="cursor-pointer">
-              <input
-                type="file"
-                accept=".json"
-                onChange={importData}
-                className="hidden"
-              />
-              <Button 
-                variant="outline" 
+              <input type="file" accept=".json" onChange={importData} className="hidden" />
+              <Button
+                variant="outline"
                 className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
                 asChild
               >
@@ -510,8 +493,8 @@ const Index = () => {
 
             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
                 >
                   <Settings className="w-4 h-4" />
@@ -523,7 +506,9 @@ const Index = () => {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="background" className="text-white">URL del fondo de pantalla</Label>
+                    <Label htmlFor="background" className="text-white">
+                      URL del fondo de pantalla
+                    </Label>
                     <Input
                       id="background"
                       value={newBackground}
@@ -532,27 +517,22 @@ const Index = () => {
                       className="bg-gray-800 border-gray-600 text-white"
                     />
                   </div>
-                  
+
                   <div className="text-center text-gray-400">
                     <span>- o -</span>
                   </div>
-                  
+
                   <div>
                     <Label className="text-white">Seleccionar archivo local</Label>
                     <label className="cursor-pointer block">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleBackgroundFile}
-                        className="hidden"
-                      />
+                      <input type="file" accept="image/*" onChange={handleBackgroundFile} className="hidden" />
                       <div className="bg-gray-800 border border-gray-600 rounded-md p-3 text-center text-white hover:bg-gray-700 transition-colors">
                         <Upload className="w-5 h-5 mx-auto mb-2" />
                         <span>Hacer clic para seleccionar imagen</span>
                       </div>
                     </label>
                   </div>
-                  
+
                   <Button onClick={updateBackground} className="w-full">
                     Actualizar Fondo
                   </Button>
@@ -586,9 +566,7 @@ const Index = () => {
                   </h2>
                   <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button 
-                        className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white"
-                      >
+                      <Button className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white">
                         <Plus className="w-4 h-4 mr-2" />
                         Agregar Enlace
                       </Button>
@@ -599,32 +577,38 @@ const Index = () => {
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>
-                          <Label htmlFor="name" className="text-white">Nombre</Label>
+                          <Label htmlFor="name" className="text-white">
+                            Nombre
+                          </Label>
                           <Input
                             id="name"
                             value={newShortcut.name}
-                            onChange={(e) => setNewShortcut(prev => ({ ...prev, name: e.target.value }))}
+                            onChange={(e) => setNewShortcut((prev) => ({ ...prev, name: e.target.value }))}
                             placeholder="Google, Facebook, etc."
                             className="bg-gray-800 border-gray-600 text-white"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="url" className="text-white">URL</Label>
+                          <Label htmlFor="url" className="text-white">
+                            URL
+                          </Label>
                           <Input
                             id="url"
                             value={newShortcut.url}
-                            onChange={(e) => setNewShortcut(prev => ({ ...prev, url: e.target.value }))}
+                            onChange={(e) => setNewShortcut((prev) => ({ ...prev, url: e.target.value }))}
                             placeholder="https://google.com"
                             className="bg-gray-800 border-gray-600 text-white"
                           />
                         </div>
                         <div>
-                          <Label htmlFor="icon" className="text-white">Icono (URL - opcional)</Label>
+                          <Label htmlFor="icon" className="text-white">
+                            Icono (URL - opcional)
+                          </Label>
                           <div className="flex gap-2">
                             <Input
                               id="icon"
                               value={newShortcut.icon}
-                              onChange={(e) => setNewShortcut(prev => ({ ...prev, icon: e.target.value }))}
+                              onChange={(e) => setNewShortcut((prev) => ({ ...prev, icon: e.target.value }))}
                               placeholder="https://ejemplo.com/favicon.ico"
                               className="bg-gray-800 border-gray-600 text-white flex-1"
                             />
@@ -652,8 +636,8 @@ const Index = () => {
                     </DialogContent>
                   </Dialog>
                 </div>
-                <SortableShortcutGrid 
-                  items={getSortedItems(currentTab.websites)} 
+                <SortableShortcutGrid
+                  items={getSortedItems(currentTab.websites)}
                   category="websites"
                   onReorder={handleReorder}
                   onOpen={openShortcut}
@@ -668,10 +652,7 @@ const Index = () => {
 
             {/* Right Column - Notes Section */}
             <div className="lg:col-span-1">
-              <NotesSection
-                notes={currentTab.notes}
-                onNotesUpdate={handleNotesUpdate}
-              />
+              <NotesSection notes={currentTab.notes} onNotesUpdate={handleNotesUpdate} />
             </div>
           </div>
         </div>

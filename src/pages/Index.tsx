@@ -13,6 +13,7 @@ import { getAutomaticIcon } from "@/utils/iconUtils";
 import TabManager, { TabData } from "@/components/TabManager";
 import NotesSection from "@/components/NotesSection";
 import UpcomingEvents from "@/components/UpcomingEvents";
+import MonthlyCalendar from "@/components/MonthlyCalendar";
 
 interface Shortcut {
   id: string;
@@ -648,6 +649,9 @@ const Index = () => {
 
               {/* Upcoming Events Section */}
               <UpcomingEvents />
+
+              {/* Monthly Calendar Section */}
+              <MonthlyCalendar />
             </div>
 
             {/* Right Column - Notes Section */}
